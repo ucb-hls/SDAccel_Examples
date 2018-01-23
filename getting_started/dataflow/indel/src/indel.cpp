@@ -118,6 +118,13 @@ static void write_result(int *output, hls::stream<int> &outStream , int size)
 }
 
 //----------------------------------------- INDEL functions -------------------------------------------//
+// Target file representation 
+// target number| chromo contig # |starting position | ending position
+// offset is added to the starting position to produce the result
+// 
+// returns two values
+// true,false
+// if true update the position to the new k + starting position
 
 int cal_whd(int i, int j, int starting_index){
     int whd = 0;
@@ -149,38 +156,62 @@ int cal_whd(int i, int j, int starting_index){
 // starts with 33 - 126
 #define QS_LEN 256
 
+
 int min_whd [NUM_CON][NUM_READ];
 
-void whd (int min_whd[NUM_CON][NUM_READ]) {
-        // JENNY is consensus_length read_length know at compile time? 
-        for (int i = 0; i < NUM_CON; i++) {
-            for (int j = 0; j < NUM_READ; j++) {
-                //int whd_local [CON_LEN - READ_LEN];
-                int min; 
-                for (int k = 0; k <= consensus_length - read_length; k++) {
-                    // this function? 
-             
-                    int ret = cal_whd(i, j, starting_index);
-                    min = (ret < min) ? ret : min; 
+void whd (int consensus[NUM_CON][CON_LEN], int read[NUM_READ][READ_LEN], int qs[NUM_READ][READ_LEN], \
+    int min_whd[NUM_CON][NUM_READ], int min_idx[NUM_CON][NUM_READ]) {
+    for (int i = 0; i < NUM_CON; i++) {
+        for (int j = 0; j < NUM_READ; j++) {
+            //int whd_local [CON_LEN - READ_LEN];
+            int min = 0xffff_ffff; 
+            int min_idx = CON_LEN - READ_LEN + 1;
+            //for (int k = 0; k <= consensus_length - read_length; k++) {
+            for (int k = 0; k <= CON_LEN - READ_LEN; k++) {
+
+                // whd 
+                int whd = 0;
+                for (int l = 0; l <= read_length; l++) {
+                    if (consensus[k + l] != read[l]){
+                        whd += qs[l];
+                    }                        
                 }
-                min_whd[i][j] = min;
+                if (whd < min) {
+                    min =  whd; 
+                    min_idx = k; 
+               }
+
             }
+            assert(min_idx <= CON_LEN - READ_LEN);
+            min_whd[i][j] = min;
+            min_idx[i][j] = min_idx;
         }
+    }
 }
 
 void score_whd (int min_whd[NUM_CON][NUM_READ], int scores[NUM_CON]) {
-
-        // JENNY is consensus_length read_length know at compile time? 
-        int min_idx;
-        for (int i = 0; i < NUM_CON; i++) {
-            for (int j = 0; j < NUM_READ; j++) {
-                tmp = min_whd[i][j] - min_whd[0][j];
-                // JENNY sum? 
-                scores[i] += (tmp > 0) ? tmp: -tmp;
-            }
+    // might need to reduce the bits used in here 
+    int min_score = 0xffff_ffff;
+    int min_idx = NUM_CON + 1;
+    for (int i = 1; i < NUM_CON; i++) {
+        int score = 0;
+        for (int j = 0; j < NUM_READ; j++) {
+            tmp = min_whd[i][j] - min_whd[0][j];
+            score += (tmp > 0) ? tmp: -tmp;
         }
+        min_idx = (score < min_score) ? i : min_idx;
+    }
+    assert(min_idx < NUM_CON);
+    return min_idx;
 }
 
+void indel (int consensus[NUM_CON][CON_LEN], int read[NUM_READ][READ_LEN], int qs[NUM_READ][READ_LEN] ){
+    int min_whd[NUM_CON][[NUM_READ];
+
+    
+
+
+}
 
 
 extern "C" {
