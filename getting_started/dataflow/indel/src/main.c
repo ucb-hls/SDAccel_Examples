@@ -1,0 +1,248 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+
+int* read_target (){
+
+  FILE *fp;
+  char* con = "./1025.TARGET.tbl"; 
+  fp=fopen(con, "r");
+
+  if (fp == NULL)
+    exit(EXIT_FAILURE);
+
+  char line[2046];
+  char separators[] = "|";
+
+  int* target = malloc(sizeof(int)*4);
+
+  fgets(line, sizeof(line), fp);
+  char *p = strtok(line, separators); 
+
+  int i = 0; 
+
+  while (p != NULL){
+    target[i++] = atoi(p); 
+    //printf("%s\n", p);
+    p = strtok(NULL, separators);
+  } 
+  printf("%d %d\n", i, target[3]);
+  fclose(fp);
+
+  int target_num = target[0];
+  int contig_num = target[1];
+  int starting_pos = target[2];
+  int ending_pos = target[3];
+
+  int length = ending_pos - starting_pos;
+  printf("length: %d\n", length);
+
+  return target;
+}
+
+int count_lines(char* filename){
+
+  FILE *fp;
+  fp = fopen(filename, "r");
+
+  // Check if file exists
+  if (fp == NULL)
+  {
+    printf("Could not open file %s\n", filename);
+    return 0;
+  }
+  int count = 0;
+  char c; 
+  // Extract characters from file and store in character c
+  for (c = getc(fp); c != EOF; c = getc(fp))
+    if (c == '\n') // Increment count if this character is newline
+      count = count + 1;
+
+  // Close the file
+  fclose(fp);
+  return count+1;
+}
+
+void parse_con(const char* file_prefix, char* con_arr, int* con_len, int* con_size) {
+
+  FILE *fp;
+  char con[256]="";
+  strcat(con, file_prefix);
+  strcat(con, ".SEQ.tbl");
+
+  int num_lines = count_lines(con);
+  //printf("num_lines %d\n", num_lines);
+  fp=fopen(con, "r");
+
+  if (fp == NULL)
+    exit(EXIT_FAILURE);
+
+  // Length of each segment 
+  con_len = (int*) malloc(sizeof(int) * num_lines);
+  // Location of the end of each segment  
+  int* pos = (int*) malloc(sizeof(int) * num_lines);
+
+  char separators[] = "|";
+  char *line = NULL;
+  size_t line_len = 0;
+  ssize_t read;
+
+  int line_num = 0;
+  int base = 0;
+  while ((read = getline(&line, &line_len, fp)) != -1) {
+    //printf("Retrieved line of length %zu :\n", read);
+    //printf("%s", line);
+
+    char *p = strtok(line, separators); 
+
+    assert (p != NULL);
+
+    int i = 1; 
+    while (p != NULL){
+      //printf("%s\n", p);
+      //target[i++] = atoi(p); 
+      p = strtok(NULL, separators);
+
+      if(i == 1){ 
+        //if(line_num == 0){
+        //  len = strlen(p); 
+        //  con_arr = (char*) malloc(len * num_lines * sizeof(char));
+        //}
+        con_len[line_num] = strlen(p);
+
+        for (int k = 0; k < con_len[line_num]; k++){
+          //printf("%c", p[k]);
+          strncpy(&con_arr[base + k], &p[k], 1);
+          //printf("%d\n", line_num* len + k);
+          printf("%c", con_arr[base + k]);
+        }
+        printf("\n");
+      }
+      i++;
+    }
+    base += con_len[line_num];
+    pos[line_num] = base; 
+    line_num++;
+  }
+  //printf("%d\n", len);
+  //int arr_size = len * num_lines;
+  //printf("%d\n", arr_size);
+  //for(int i= 0; i < arr_size; i++ ){
+  //  printf("%d ", con_arr[i]);
+  //}
+
+  *con_size = num_lines;
+  free(line);
+  fclose(fp); 
+}
+
+
+void parse_reads(const char* file_prefix, char* reads_arr, char* weights_arr, int* reads_len, int* reads_size) {
+  char reads[256]="";
+  FILE *fp;
+
+  strcat(reads, file_prefix);
+  strcat(reads, ".READS.tbl");
+
+  int num_lines = count_lines(reads);
+  //printf("num_lines %d\n", num_lines);
+  fp=fopen(reads, "r");
+
+  if (fp == NULL)
+    exit(EXIT_FAILURE);
+
+  char separators[] = "|";
+  char *line = NULL;
+  size_t line_len = 0;
+  // Length of each segment 
+  reads_len = (int*) malloc(sizeof(int) * num_lines);
+  // Location of the end of each segment  
+  int* pos = (int*) malloc(sizeof(int) * num_lines);
+  ssize_t read;
+
+  int line_num = 0;
+  int base = 0; 
+  while ((read = getline(&line, &line_len, fp)) != -1) {
+    char *p = strtok(line, separators); 
+
+    assert (p != NULL);
+
+    int i = 1; 
+    while (p != NULL) {
+      //printf("%s\n", p);
+      p = strtok(NULL, separators);
+
+      if (i == 4) { 
+        //if(line_num == 0) {
+        //reads_arr = (char*) malloc(len * num_lines * sizeof(char));
+        //weights_arr = (char*) malloc(len * num_lines * sizeof(char));
+        //}
+
+        reads_len[line_num] = strlen(p); 
+
+        for (int k = 0; k < reads_len[line_num]; k++) {
+          //printf("%c", p[k]);
+          //strncpy(&reads_arr[line_num* len + k], &p[k], 1);
+          strncpy(&reads_arr[base + k], &p[k], 1);
+          //printf("%d\n", line_num* len + k);
+          printf("%c", reads_arr[base + k]);
+        }
+        printf("\n");
+      }
+
+      else if (i == 5) {
+        for (int k = 0; k < reads_len[line_num]; k++) {
+          //printf("%c", p[k]);
+          strncpy(&weights_arr[base + k], &p[k], 1);
+          //printf("%d\n", line_num* len + k);
+          printf("%c", weights_arr[base + k]);
+
+        }
+        printf("\n");
+      }
+
+      i++;
+    }
+
+    base += reads_len[line_num];
+    pos[line_num] = base; 
+    line_num++;
+  }
+  //printf("%d\n", len);
+  //int arr_size = len * num_lines;
+  //printf("%d\n", arr_size);
+  //for(int i= 0; i < arr_size; i++ ){
+  //  printf("%c", reads_arr[i]);
+  // }
+  // printf("\n\n");
+  // 
+  // for(int i= 0; i < arr_size; i++ ){
+  //   printf("%c", weights_arr[i]);
+  // }
+
+  *reads_size = num_lines;
+  free(line);
+  fclose(fp); 
+}
+#define NUM_CON 32
+#define NUM_READ 256
+#define CON_LEN 2048
+#define READ_LEN 256
+
+int main() {
+  const char* file_prefix = "./1025";
+
+  char* con_arr, *reads_arr, *weights_arr; 
+  int *con_len, con_size, *reads_len, reads_size; 
+
+  // Malloc the largest array 
+  con_arr = (char*) malloc( NUM_CON * CON_LEN * sizeof(char));
+  reads_arr = (char*) malloc( NUM_READ * READ_LEN * sizeof(char));
+  weights_arr = (char*) malloc( NUM_READ * READ_LEN * sizeof(char));
+
+  //parse_con(file_prefix, con_arr, con_len, &con_size);
+  parse_reads(file_prefix, reads_arr, weights_arr, reads_len, &reads_size);
+
+}
+
