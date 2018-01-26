@@ -64,12 +64,12 @@ int count_lines(char* filename){
   return count+1;
 }
 
-void parse_con(const char* file_prefix, char* con_arr, int* con_len, int* con_size) {
+void parse(const char* file_prefix, int col_num, char* con_arr, int* con_len, int* con_size) {
 
   FILE *fp;
   char con[256]="";
   strcat(con, file_prefix);
-  strcat(con, ".SEQ.tbl");
+  strcat(con, ".tbl");
 
   int num_lines = count_lines(con);
   //printf("num_lines %d\n", num_lines);
@@ -104,14 +104,14 @@ void parse_con(const char* file_prefix, char* con_arr, int* con_len, int* con_si
       //target[i++] = atoi(p); 
       p = strtok(NULL, separators);
 
-      if(i == 1){ 
+      if(i == col_num){ 
         //if(line_num == 0){
         //  len = strlen(p); 
         //  con_arr = (char*) malloc(len * num_lines * sizeof(char));
         //}
         con_len[line_num] = strlen(p);
-
-        for (int k = 0; k < con_len[line_num]; k++){
+        int k; 
+        for (k = 0; k < con_len[line_num]; k++){
           //printf("%c", p[k]);
           strncpy(&con_arr[base + k], &p[k], 1);
           //printf("%d\n", line_num* len + k);
@@ -138,100 +138,20 @@ void parse_con(const char* file_prefix, char* con_arr, int* con_len, int* con_si
 }
 
 
-void parse_reads(const char* file_prefix, char* reads_arr, char* weights_arr, int* reads_len, int* reads_size) {
-  char reads[256]="";
-  FILE *fp;
-
-  strcat(reads, file_prefix);
-  strcat(reads, ".READS.tbl");
-
-  int num_lines = count_lines(reads);
-  //printf("num_lines %d\n", num_lines);
-  fp=fopen(reads, "r");
-
-  if (fp == NULL)
-    exit(EXIT_FAILURE);
-
-  char separators[] = "|";
-  char *line = NULL;
-  size_t line_len = 0;
-  // Length of each segment 
-  reads_len = (int*) malloc(sizeof(int) * num_lines);
-  // Location of the end of each segment  
-  int* pos = (int*) malloc(sizeof(int) * num_lines);
-  ssize_t read;
-
-  int line_num = 0;
-  int base = 0; 
-  while ((read = getline(&line, &line_len, fp)) != -1) {
-    char *p = strtok(line, separators); 
-
-    assert (p != NULL);
-
-    int i = 1; 
-    while (p != NULL) {
-      //printf("%s\n", p);
-      p = strtok(NULL, separators);
-
-      if (i == 4) { 
-        //if(line_num == 0) {
-        //reads_arr = (char*) malloc(len * num_lines * sizeof(char));
-        //weights_arr = (char*) malloc(len * num_lines * sizeof(char));
-        //}
-
-        reads_len[line_num] = strlen(p); 
-
-        for (int k = 0; k < reads_len[line_num]; k++) {
-          //printf("%c", p[k]);
-          //strncpy(&reads_arr[line_num* len + k], &p[k], 1);
-          strncpy(&reads_arr[base + k], &p[k], 1);
-          //printf("%d\n", line_num* len + k);
-          printf("%c", reads_arr[base + k]);
-        }
-        printf("\n");
-      }
-
-      else if (i == 5) {
-        for (int k = 0; k < reads_len[line_num]; k++) {
-          //printf("%c", p[k]);
-          strncpy(&weights_arr[base + k], &p[k], 1);
-          //printf("%d\n", line_num* len + k);
-          printf("%c", weights_arr[base + k]);
-
-        }
-        printf("\n");
-      }
-
-      i++;
-    }
-
-    base += reads_len[line_num];
-    pos[line_num] = base; 
-    line_num++;
-  }
-  //printf("%d\n", len);
-  //int arr_size = len * num_lines;
-  //printf("%d\n", arr_size);
-  //for(int i= 0; i < arr_size; i++ ){
-  //  printf("%c", reads_arr[i]);
-  // }
-  // printf("\n\n");
-  // 
-  // for(int i= 0; i < arr_size; i++ ){
-  //   printf("%c", weights_arr[i]);
-  // }
-
-  *reads_size = num_lines;
-  free(line);
-  fclose(fp); 
-}
 #define NUM_CON 32
 #define NUM_READ 256
 #define CON_LEN 2048
 #define READ_LEN 256
 
 int main() {
-  const char* file_prefix = "./1025";
+  const char* file_prefix = "./ir_toy/1025";
+  char con[256]="";
+  strcat(con, file_prefix);
+  strcat(con, ".SEQ");
+
+  char reads[256]="";
+  strcat(reads, file_prefix);
+  strcat(reads, ".READS");
 
   char* con_arr, *reads_arr, *weights_arr; 
   int *con_len, con_size, *reads_len, reads_size; 
@@ -241,8 +161,9 @@ int main() {
   reads_arr = (char*) malloc( NUM_READ * READ_LEN * sizeof(char));
   weights_arr = (char*) malloc( NUM_READ * READ_LEN * sizeof(char));
 
-  //parse_con(file_prefix, con_arr, con_len, &con_size);
-  parse_reads(file_prefix, reads_arr, weights_arr, reads_len, &reads_size);
+  parse( con,1, con_arr, con_len, &con_size);
+  parse( reads, 4, reads_arr, reads_len, &reads_size);
+  parse( reads, 5, weights_arr, reads_len, &reads_size);
 
 }
 
