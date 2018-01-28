@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include "indel_ref.c"
 
 int* read_target (){
 
@@ -64,7 +65,7 @@ int count_lines(char* filename){
   return count+1;
 }
 
-void parse(const char* file_prefix, int col_num, char* con_arr, int* con_len, int* con_size) {
+void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_arr, int* con_size) {
 
   FILE *fp;
   char con[256]="";
@@ -79,9 +80,12 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int* con_len, in
     exit(EXIT_FAILURE);
 
   // Length of each segment 
-  con_len = (int*) malloc(sizeof(int) * num_lines);
+  int * con_len = (int*) malloc(sizeof(int) * num_lines);
+  assert(con_len != NULL);
+  * con_len_arr = con_len;
   // Location of the end of each segment  
   int* pos = (int*) malloc(sizeof(int) * num_lines);
+  assert(pos != NULL);
 
   char separators[] = "|";
   char *line = NULL;
@@ -144,7 +148,7 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int* con_len, in
 #define READ_LEN 256
 
 int main() {
-  const char* file_prefix = "./ir_toy/1025";
+  const char* file_prefix = "./ir_toy/00";
   char con[256]="";
   strcat(con, file_prefix);
   strcat(con, ".SEQ");
@@ -161,9 +165,19 @@ int main() {
   reads_arr = (char*) malloc( NUM_READ * READ_LEN * sizeof(char));
   weights_arr = (char*) malloc( NUM_READ * READ_LEN * sizeof(char));
 
-  parse( con,1, con_arr, con_len, &con_size);
-  parse( reads, 4, reads_arr, reads_len, &reads_size);
-  parse( reads, 5, weights_arr, reads_len, &reads_size);
+  parse( con,1, con_arr, &con_len, &con_size);
+  parse( reads, 4, reads_arr, &reads_len, &reads_size);
+  parse( reads, 5, weights_arr, &reads_len, &reads_size);
+   
+  int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
+  int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
+  int* new_ref= (int*) malloc(reads_size * sizeof(int));
+  int* new_ref_idx= (int*) malloc(reads_size * sizeof(int));
+
+  whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
+  score_whd (min_whd,  min_whd_idx, con_size, reads_size, new_ref, new_ref_idx);
+ 
+  return 0;
 
 }
 
