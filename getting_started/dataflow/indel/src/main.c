@@ -37,7 +37,7 @@ int* read_target (){
   int ending_pos = target[3];
 
   int length = ending_pos - starting_pos;
-  printf("length: %d\n", length);
+  //printf("length: %d\n", length);
 
   return target;
 }
@@ -56,13 +56,18 @@ int count_lines(char* filename){
   int count = 0;
   char c; 
   // Extract characters from file and store in character c
-  for (c = getc(fp); c != EOF; c = getc(fp))
-    if (c == '\n') // Increment count if this character is newline
+  char *line = NULL;
+  size_t line_len = 0;
+  ssize_t read;
+ 
+  while ((read = getline(&line, &line_len, fp)) != -1) {
+  //for (c = getc(fp); c != EOF; c = getc(fp))
+  //  if (c == '\n') // Increment count if this character is newline
       count = count + 1;
-
+  }
   // Close the file
   fclose(fp);
-  return count+1;
+  return count;
 }
 
 void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_arr, int* con_size) {
@@ -114,14 +119,15 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
         //  con_arr = (char*) malloc(len * num_lines * sizeof(char));
         //}
         con_len[line_num] = strlen(p);
+        //fprintf(stderr, "line_num %d strlen %d\n", line_num, con_len[line_num]);
         int k; 
         for (k = 0; k < con_len[line_num]; k++){
           //printf("%c", p[k]);
           strncpy(&con_arr[base + k], &p[k], 1);
           //printf("%d\n", line_num* len + k);
-          printf("%c", con_arr[base + k]);
+          fprintf(stderr, "%c", con_arr[base + k]);
         }
-        printf("\n");
+        fprintf(stderr, "\n");
       }
       i++;
     }
@@ -147,16 +153,24 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
 #define CON_LEN 2048
 #define READ_LEN 256
 
-int main() {
-  const char* file_prefix = "./ir_toy/00";
+int main(int argc, char* argv[]) {
+  if (argc < 2){
+        printf("Please specify filename! \n");
+        return 1;
+  }
+  //const char* file_prefix = "./ir_toy/25";
+  const char* file_prefix = "./ir_toy/";
   char con[256]="";
   strcat(con, file_prefix);
+  strcat(con, argv[1]);
   strcat(con, ".SEQ");
 
   char reads[256]="";
   strcat(reads, file_prefix);
+  strcat(reads, argv[1]);
   strcat(reads, ".READS");
 
+  printf("TARGET %s\n", argv[1]);
   char* con_arr, *reads_arr, *weights_arr; 
   int *con_len, con_size, *reads_len, reads_size; 
 
