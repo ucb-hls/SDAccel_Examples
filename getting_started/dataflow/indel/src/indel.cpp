@@ -207,6 +207,7 @@ void score_whd (int min_whd[NUM_CON][NUM_READ], int scores[NUM_CON]) {
 
 void indel (int consensus[NUM_CON][CON_LEN], int read[NUM_READ][READ_LEN], int qs[NUM_READ][READ_LEN] ){
     int min_whd[NUM_CON][[NUM_READ];
+    int scores[NUM_CON];
 
     
 
