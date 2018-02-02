@@ -141,26 +141,29 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
   fclose(fp); 
 }
 
-#define CON_SIZE 32
-#define READS_SIZE 256
+#define CON_SIZE 2
+#define READS_SIZE 8 
+//#define CON_SIZE 32
+//#define READS_SIZE 256
 #define CON_LEN 2048
 #define READS_LEN 256
 
 int main(int argc, char** argv)
 {
-
-  const char* file_prefix = "./ir_toy/";
-  char con[256]="";
+  
+  char* test_num = "125";
+  const char* file_prefix = "./src/ir_toy/";
+  char con[256] = "";
   strcat(con, file_prefix);
-  strcat(con, argv[1]);
+  strcat(con, test_num);
   strcat(con, ".SEQ");
 
   char reads[256]="";
   strcat(reads, file_prefix);
-  strcat(reads, argv[1]);
+  strcat(reads, test_num);
   strcat(reads, ".READS");
 
-  printf("TARGET %s\n", argv[1]);
+  printf("TARGET %s\n", test_num);
 
   char* con_arr, *reads_arr, *weights_arr; 
   int *con_len, con_size, *reads_len, reads_size; 
@@ -183,7 +186,8 @@ int main(int argc, char** argv)
   whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
   score_whd (min_whd,  min_whd_idx, con_size, reads_size, new_ref, new_ref_idx_ref);
 
- 
+  printf("Software Success!\n");
+    //return 0;
     //Allocate Memory in Host Memory
     std::vector<char,aligned_allocator<char>> con_arr_buffer     ( con_arr, con_arr + CON_SIZE * CON_LEN);
     std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
@@ -191,7 +195,7 @@ int main(int argc, char** argv)
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
 
-    std::vector<char,aligned_allocator<char>> new_ref_idx(READS_SIZE);
+    std::vector<int,aligned_allocator<int>> new_ref_idx(READS_SIZE);
     for(int i = 0 ; i < READS_SIZE; i++){
         new_ref_idx[i] = 0;
     }
@@ -228,7 +232,7 @@ int main(int argc, char** argv)
             READS_SIZE * sizeof(int), reads_len_buffer.data());
  
     cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-            READS_SIZE, new_ref_idx.data());
+            READS_SIZE * sizeof(int), new_ref_idx.data());
 
     inBufVec.push_back(con_len_input);
     inBufVec.push_back(reads_len_input);
