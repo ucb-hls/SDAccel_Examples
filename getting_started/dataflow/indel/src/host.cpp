@@ -257,13 +257,21 @@ int main(int argc, char** argv)
     krnl_indel.setArg(narg++, new_ref_idx_output);
 
     //Launch the Kernel
-    q.enqueueTask(krnl_indel);
+    cl::Event event;
+    q.enqueueTask(krnl_indel, NULL, &event);
+
+    event.wait();
 
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
     //OPENCL HOST CODE AREA END
     
+    double nanoSeconds = event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+            event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+
+    printf("OpenCl Execution time is: %0.3f milliseconds \n", nanoSeconds/ 1000000.0);
+
     // Compare the results of the Device to the simulation
     int match = 0;
     for (int i = 0 ; i < READS_SIZE; i++){
