@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <ap_int.h>
-#define CON_SIZE 2
-#define READS_SIZE 8
+
+#include "Indel_Accel.h"
+//#define CON_SIZE 2
+//#define READS_SIZE 8
 
 extern "C" {
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
@@ -44,8 +46,8 @@ void Indel_Accel (char* consensus, const int consensus_size, int* consensus_leng
     for (int i = 0 ; i < READS_SIZE; i ++){
         read_input(reads, readStreams[i], reads_length[i]);
     }*/
-    int min_whd[CON_SIZE][READS_SIZE];
-    int min_whd_idx[CON_SIZE][READS_SIZE];
+    int min_whd[CON_SIZE * READS_SIZE];
+    int min_whd_idx[CON_SIZE * READS_SIZE];
     int new_ref[READS_SIZE];
     int consensus_base = 0; 
     int i, j, k, l;
@@ -88,8 +90,11 @@ void Indel_Accel (char* consensus, const int consensus_size, int* consensus_leng
             //printf( "min_idx %d\n", min_idx);
             //assert(min_idx <= local_consensus_length - local_reads_length);
             
-            min_whd[i][j] = min;
-            min_whd_idx[i][j] = min_idx;
+            //min_whd[i][j] = min;
+            //min_whd_idx[i][j] = min_idx;
+            min_whd[i * reads_size + j] = min;
+            min_whd_idx[i * reads_size + j] = min_idx;
+ 
             reads_base += local_reads_length;
         }
         consensus_base += local_consensus_length;
@@ -111,8 +116,11 @@ void Indel_Accel (char* consensus, const int consensus_size, int* consensus_leng
     
     for (j = 0; j < reads_size; j++) {
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
-            new_ref[j] = min_whd[min_idx][j];
-            new_ref_idx[j] = min_whd_idx[min_idx][j];
+            //new_ref[j] = min_whd[min_idx][j];
+            //new_ref_idx[j] = min_whd_idx[min_idx][j];
+            new_ref[j] = min_whd[min_idx * reads_size + j];
+            new_ref_idx[j] = min_whd_idx[ min_idx * reads_size +j];
+ 
         //} else{
         //    new_ref[j] = min_whd [j];
         //    new_ref_idx[j] = min_whd_idx[j]; 
