@@ -31,11 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <assert.h>
 
-#define DATA_SIZE   4096
-#define INCR_VALUE  4
-#define STAGES      4
-
-#include "indel_ref.c"
+#include "Indel_Accel.h"
+#include "Indel_Accel_SW.cpp"
 int count_lines(char* filename){
 
   FILE *fp;
@@ -140,13 +137,6 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
   free(line);
   fclose(fp); 
 }
-
-#define CON_SIZE 2
-#define READS_SIZE 8 
-//#define CON_SIZE 32
-//#define READS_SIZE 256
-#define CON_LEN 2048
-#define READS_LEN 256
 
 int main(int argc, char** argv)
 {
@@ -274,7 +264,7 @@ int main(int argc, char** argv)
 
     // Compare the results of the Device to the simulation
     int match = 0;
-    for (int i = 0 ; i < READS_SIZE; i++){
+    for (int i = 0 ; i < reads_size; i++){
         if (new_ref_idx[i] != new_ref_idx_ref[i]){
             std::cout << "Error: Result mismatch" << std::endl;
             std::cout << "i = " << i << " CPU result = " << new_ref_idx_ref[i]
