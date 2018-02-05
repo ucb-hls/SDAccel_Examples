@@ -1,187 +1,212 @@
 /**********
-Copyright (c) 2017, Xilinx, Inc.
-All rights reserved.
+  Copyright (c) 2017, Xilinx, Inc.
+  All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+  Redistribution and use in source and binary forms, with or without modification,
+  are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
+  1. Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
+  2. Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
+  3. Neither the name of the copyright holder nor the names of its contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**********/
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **********/
 //OpenCL utility layer include
 #include "xcl2.hpp"
 #include <vector>
 #include <assert.h>
+#include <map>
+
+#include "ap_int.h"
 
 #include "Indel_Accel.h"
 #include "Indel_Accel_SW.cpp"
+
+typedef std::map<char, ap_int<3>> BasePairMap;
+
 int count_lines(char* filename){
 
-  FILE *fp;
-  fp = fopen(filename, "r");
+    FILE *fp;
+    fp = fopen(filename, "r");
 
-  // Check if file exists
-  if (fp == NULL)
-  {
-    printf("Could not open file %s\n", filename);
-    return 0;
-  }
+    // Check if file exists
+    if (fp == NULL)
+    {
+        printf("Could not open file %s\n", filename);
+        return 0;
+    }
 
-  int count = 0;
-  // Extract characters from file and store in character c
-  char *line = NULL;
-  size_t line_len = 0;
-  ssize_t read;
- 
-  while ((read = getline(&line, &line_len, fp)) != -1) {
-  //for (c = getc(fp); c != EOF; c = getc(fp))
-  //  if (c == '\n') // Increment count if this character is newline
-      count = count + 1;
-  }
-  // Close the file
-  fclose(fp);
-  return count;
+    int count = 0;
+    // Extract characters from file and store in character c
+    char *line = NULL;
+    size_t line_len = 0;
+    ssize_t read;
+
+    while ((read = getline(&line, &line_len, fp)) != -1) {
+        //for (c = getc(fp); c != EOF; c = getc(fp))
+        //  if (c == '\n') // Increment count if this character is newline
+        count = count + 1;
+    }
+    // Close the file
+    fclose(fp);
+    return count;
 }
 
 void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_arr, int* con_size) {
 
-  FILE *fp;
-  char con[256]="";
-  strcat(con, file_prefix);
-  strcat(con, ".tbl");
+    FILE *fp;
+    char con[256]="";
+    strcat(con, file_prefix);
+    strcat(con, ".tbl");
 
-  int num_lines = count_lines(con);
-  //printf("num_lines %d\n", num_lines);
-  fp=fopen(con, "r");
+    int num_lines = count_lines(con);
+    //printf("num_lines %d\n", num_lines);
+    fp=fopen(con, "r");
 
-  if (fp == NULL)
-    exit(EXIT_FAILURE);
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
 
-  // Length of each segment 
-  int * con_len = (int*) malloc(sizeof(int) * num_lines);
-  assert(con_len != NULL);
-  * con_len_arr = con_len;
-  // Location of the end of each segment  
-  int* pos = (int*) malloc(sizeof(int) * num_lines);
-  assert(pos != NULL);
+    // Length of each segment 
+    int * con_len = (int*) malloc(sizeof(int) * num_lines);
+    assert(con_len != NULL);
+    * con_len_arr = con_len;
+    // Location of the end of each segment  
+    int* pos = (int*) malloc(sizeof(int) * num_lines);
+    assert(pos != NULL);
 
-  char separators[] = "|";
-  char *line = NULL;
-  size_t line_len = 0;
-  ssize_t read;
+    char separators[] = "|";
+    char *line = NULL;
+    size_t line_len = 0;
+    ssize_t read;
 
-  int line_num = 0;
-  int base = 0;
-  while ((read = getline(&line, &line_len, fp)) != -1) {
-    //printf("Retrieved line of length %zu :\n", read);
-    //printf("%s", line);
+    int line_num = 0;
+    int base = 0;
+    while ((read = getline(&line, &line_len, fp)) != -1) {
+        //printf("Retrieved line of length %zu :\n", read);
+        //printf("%s", line);
 
-    char *p = strtok(line, separators); 
+        char *p = strtok(line, separators); 
 
-    assert (p != NULL);
+        assert (p != NULL);
 
-    int i = 1; 
-    while (p != NULL){
-      //printf("%s\n", p);
-      //target[i++] = atoi(p); 
-      p = strtok(NULL, separators);
+        int i = 1; 
+        while (p != NULL){
+            //printf("%s\n", p);
+            //target[i++] = atoi(p); 
+            p = strtok(NULL, separators);
 
-      if(i == col_num){ 
-        //if(line_num == 0){
-        //  len = strlen(p); 
-        //  con_arr = (char*) malloc(len * num_lines * sizeof(char));
-        //}
-        con_len[line_num] = strlen(p);
-        //fprintf(stderr, "line_num %d strlen %d\n", line_num, con_len[line_num]);
-        int k; 
-        for (k = 0; k < con_len[line_num]; k++){
-          //printf("%c", p[k]);
-          strncpy(&con_arr[base + k], &p[k], 1);
-          //printf("%d\n", line_num* len + k);
-          fprintf(stderr, "%c", con_arr[base + k]);
+            if(i == col_num){ 
+                //if(line_num == 0){
+                //  len = strlen(p); 
+                //  con_arr = (char*) malloc(len * num_lines * sizeof(char));
+                //}
+                con_len[line_num] = strlen(p);
+                //fprintf(stderr, "line_num %d strlen %d\n", line_num, con_len[line_num]);
+                int k; 
+                for (k = 0; k < con_len[line_num]; k++){
+                    //printf("%c", p[k]);
+                    strncpy(&con_arr[base + k], &p[k], 1);
+                    //printf("%d\n", line_num* len + k);
+                    fprintf(stderr, "%c", con_arr[base + k]);
+                }
+                fprintf(stderr, "\n");
+            }
+            i++;
         }
-        fprintf(stderr, "\n");
-      }
-      i++;
+        base += con_len[line_num];
+        pos[line_num] = base; 
+        line_num++;
     }
-    base += con_len[line_num];
-    pos[line_num] = base; 
-    line_num++;
-  }
-  //printf("%d\n", len);
-  //int arr_size = len * num_lines;
-  //printf("%d\n", arr_size);
-  //for(int i= 0; i < arr_size; i++ ){
-  //  printf("%d ", con_arr[i]);
-  //}
+    //printf("%d\n", len);
+    //int arr_size = len * num_lines;
+    //printf("%d\n", arr_size);
+    //for(int i= 0; i < arr_size; i++ ){
+    //  printf("%d ", con_arr[i]);
+    //}
 
-  *con_size = num_lines;
-  free(line);
-  fclose(fp); 
+    *con_size = num_lines;
+    free(line);
+    fclose(fp); 
 }
 
 int main(int argc, char** argv)
 {
-  
-  char* test_num = "125";
-  const char* file_prefix = "./src/ir_toy/";
-  char con[256] = "";
-  strcat(con, file_prefix);
-  strcat(con, test_num);
-  strcat(con, ".SEQ");
 
-  char reads[256]="";
-  strcat(reads, file_prefix);
-  strcat(reads, test_num);
-  strcat(reads, ".READS");
+    char* test_num = "125";
+    const char* file_prefix = "./src/ir_toy/";
+    char con[256] = "";
+    strcat(con, file_prefix);
+    strcat(con, test_num);
+    strcat(con, ".SEQ");
 
-  printf("TARGET %s\n", test_num);
+    char reads[256]="";
+    strcat(reads, file_prefix);
+    strcat(reads, test_num);
+    strcat(reads, ".READS");
 
-  char* con_arr, *reads_arr, *weights_arr; 
-  int *con_len, con_size, *reads_len, reads_size; 
+    printf("TARGET %s\n", test_num);
 
-  // Malloc the largest array 
-  con_arr = (char*) malloc( CON_SIZE * CON_LEN * sizeof(char));
-  reads_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
-  weights_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
+    BasePairMap m;
+    m['A'] = 0;
+    m['T'] = 1;
+    m['C'] = 2;
+    m['G'] = 3;
+    m['U'] = 4;
 
-  parse( con,1, con_arr, &con_len, &con_size);
-  parse( reads, 4, reads_arr, &reads_len, &reads_size);
-  parse( reads, 5, weights_arr, &reads_len, &reads_size);
-   
-  int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
-  int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
-  int* new_ref = (int*) malloc(reads_size * sizeof(int));
-  //int* new_ref_idx = (int*) malloc(reads_size * sizeof(int));
-  int* new_ref_idx_ref = (int*) malloc(reads_size * sizeof(int));
+    char* con_arr, *reads_arr, *weights_arr; 
+    int *con_len, con_size, *reads_len, reads_size; 
 
-  whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
-  score_whd (min_whd,  min_whd_idx, con_size, reads_size, new_ref, new_ref_idx_ref);
+    // Malloc the largest array 
+    con_arr = (char*) malloc( CON_SIZE * CON_LEN * sizeof(char));
+    reads_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
+    weights_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
 
-  printf("Software Success!\n");
+    parse( con,1, con_arr, &con_len, &con_size);
+    parse( reads, 4, reads_arr, &reads_len, &reads_size);
+    parse( reads, 5, weights_arr, &reads_len, &reads_size);
+
+    int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
+    int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
+    int* new_ref = (int*) malloc(reads_size * sizeof(int));
+    //int* new_ref_idx = (int*) malloc(reads_size * sizeof(int));
+    int* new_ref_idx_ref = (int*) malloc(reads_size * sizeof(int));
+
+    whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
+    score_whd (min_whd,  min_whd_idx, con_size, reads_size, new_ref, new_ref_idx_ref);
+
+    printf("Software Success!\n");
     //return 0;
     //Allocate Memory in Host Memory
-    std::vector<char,aligned_allocator<char>> con_arr_buffer     ( con_arr, con_arr + CON_SIZE * CON_LEN);
-    std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> con_arr_buffer     ( con_arr, con_arr + CON_SIZE * CON_LEN);
+    //std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+
+    std::vector<ap_int<3>,aligned_allocator<ap_int<3>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
+    std::vector<ap_int<3>,aligned_allocator<ap_int<3>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
     std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+
+    for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+        con_arr_buffer[i] = m[con_arr[i]];
+    }
+
+    for(int i = 0 ; i < READS_SIZE * READS_LEN; i++){
+        reads_arr_buffer[i] = m[reads_arr[i]];
+    }
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
 
@@ -214,13 +239,13 @@ int main(int argc, char** argv)
             READS_SIZE * READS_LEN, reads_arr_buffer.data());
     cl::Buffer weights_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,\ 
             READS_SIZE * READS_LEN, weights_arr_buffer.data());
- 
+
     std::vector<cl::Memory> con_len_vec, reads_len_vec;
     cl::Buffer con_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
             CON_SIZE * sizeof(int), con_len_buffer.data());
     cl::Buffer reads_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
             READS_SIZE * sizeof(int), reads_len_buffer.data());
- 
+
     cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
             READS_SIZE * sizeof(int), new_ref_idx.data());
 
@@ -256,9 +281,9 @@ int main(int argc, char** argv)
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
     //OPENCL HOST CODE AREA END
-    
+
     double nanoSeconds = event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
-            event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
     printf("OpenCl Execution time is: %0.3f milliseconds \n", nanoSeconds/ 1000000.0);
 
