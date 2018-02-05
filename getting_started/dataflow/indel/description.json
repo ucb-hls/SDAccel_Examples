@@ -1,10 +1,10 @@
 {
     "runtime": ["OpenCL"],
-    "example": "Dataflow Using HLS Stream (C)",
+    "example": "Indel Alignment ADAM",
     "overview": [
-        "This is simple example of Multiple Stages Vector Addition to demonstrate Array of Stream usage in HLS C Kernel Code."
+        "hamming distance"
     ],
-    "key_concepts": [ "Array of Stream"],
+    "key_concepts": [ ""],
     "keywords": [ "dataflow" , "hls::stream<>"],
     "os": [
         "Linux"
