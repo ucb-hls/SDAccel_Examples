@@ -7,10 +7,16 @@
 //#define CON_SIZE 2
 //#define READS_SIZE 8
 
+// JENNY TODO
+// ap_uint<3> for ATGCU 
+// ap_uint<4> to round it to power of 2 
+// ap_uint<512> is the most efficient for global memory 
+// Assign reads and consensus to different bundles for memory banking optimizations
+//
 extern "C" {
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
-void Indel_Accel (ap_int<3>* consensus, const int consensus_size, int* consensus_length, \
-    ap_int<3>* reads, const int reads_size, int* reads_length, ap_int<3>* qs, int* new_ref_idx) {
+void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
+    ap_uint<4>* reads, const int reads_size, int* reads_length, ap_uint<4>* qs, int* new_ref_idx) {
 #pragma HLS INTERFACE m_axi port=consensus offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=consensus_length offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=reads offset=slave bundle=gmem
@@ -30,10 +36,10 @@ void Indel_Accel (ap_int<3>* consensus, const int consensus_size, int* consensus
 
 
     //array of stream declaration
-    /*hls::stream<ap_int<3>> condStreams[CON_SIZE];
+    /*hls::stream<ap_uint<4>> condStreams[CON_SIZE];
     //#pragma HLS STREAM variable=condStreams depth=32
 
-    hls::stream<ap_int<3>> readStreams[READS_SIZE];
+    hls::stream<ap_uint<4>> readStreams[READS_SIZE];
     //#pragma HLS STREAM variable=readStreams depth=32
 
 

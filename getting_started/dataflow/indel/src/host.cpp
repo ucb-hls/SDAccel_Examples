@@ -37,7 +37,11 @@
 #include "Indel_Accel.h"
 #include "Indel_Accel_SW.cpp"
 
-typedef std::map<char, ap_int<3>> BasePairMap;
+// JENNY TODO
+// Put input and output onto different memory banks 
+// https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
+//
+typedef std::map<char, ap_uint<4>> BasePairMap;
 
 int count_lines(char* filename){
 
@@ -196,8 +200,8 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
-    std::vector<ap_int<3>,aligned_allocator<ap_int<3>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
-    std::vector<ap_int<3>,aligned_allocator<ap_int<3>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
     std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
