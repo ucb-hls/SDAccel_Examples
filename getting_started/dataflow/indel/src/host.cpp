@@ -140,9 +140,14 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
 
 int main(int argc, char** argv)
 {
+
+  if (argc < 2){ 
+    return 1;
+  }
   
-  char* test_num = "125";
-  const char* file_prefix = "./src/ir_toy/";
+  char* test_num = argv[1];
+  //const char* file_prefix = "./src/ir_toy/";
+  const char* file_prefix = "./src/ch22-ir/";
   char con[256] = "";
   strcat(con, file_prefix);
   strcat(con, test_num);

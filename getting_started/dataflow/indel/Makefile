@@ -7,14 +7,14 @@ include $(COMMON_REPO)/libs/opencl/opencl.mk
 # Host Application
 host_SRCS=./src/host.cpp $(xcl2_SRCS) 
 host_HDRS=$(xcl2_HDRS) ./src/Indel_Accel.h
-host_CXXFLAGS=-I./src/ $(xcl2_CXXFLAGS) $(opencl_CXXFLAGS)
+host_CXXFLAGS=-I./src/ $(xcl2_CXXFLAGS) $(opencl_CXXFLAGS) --debug
 host_LDFLAGS=$(opencl_LDFLAGS)
 
 EXES=host
 
 # Kernel
 Indel_Accel_SRCS=./src/Indel_Accel.cpp
-Indel_Accel_CLFLAGS= -k Indel_Accel -I./src/
+Indel_Accel_CLFLAGS= -k Indel_Accel -I./src/ --report estimate -g --debug
 
 XOS=Indel_Accel
 
