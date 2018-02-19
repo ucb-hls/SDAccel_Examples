@@ -212,8 +212,12 @@ int main(int argc, char** argv)
         con_arr_buffer[i] = m[con_arr[i]];
     }
 
-    for(int i = 0 ; i < READS_SIZE * READS_LEN; i++){
+
+    printf("Read Buffer:");     
+    for(int i = 0 ; i < 10; i++){
         reads_arr_buffer[i] = m[reads_arr[i]];
+        unsigned char print_var = reads_arr_buffer[i];
+        printf("%x", print_var);     
     }
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
@@ -222,6 +226,7 @@ int main(int argc, char** argv)
     for(int i = 0 ; i < READS_SIZE; i++){
         new_ref_idx[i] = 0;
     }
+    printf("\n");
 
     //OPENCL HOST CODE AREA START
     std::vector<cl::Device> devices = xcl::get_xil_devices();

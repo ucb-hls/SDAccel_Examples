@@ -9,16 +9,16 @@
 
 // JENNY TODO
 // ap_uint<3> for ATGCU 
-// ap_uint<4> to round it to power of 2 
+// ap_uint<512> to round it to power of 2 
 // ap_int<512> is the most efficient for global memory 
 // Assign reads and consensus to different bundles for memory banking optimizations
 //
 extern "C" {
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
-//void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    //ap_uint<4>* reads, const int reads_size, int* reads_length, ap_uint<4>* qs, int* new_ref_idx) {
+//void Indel_Accel (ap_uint<512>* consensus, const int consensus_size, int* consensus_length, \
+    //ap_uint<512>* reads, const int reads_size, int* reads_length, ap_uint<512>* qs, int* new_ref_idx) {
 void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx) {
+    ap_uint<512>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx) {
 #pragma HLS INTERFACE m_axi port=consensus offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=consensus_length offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=reads offset=slave bundle=gmem
@@ -38,8 +38,8 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS expression_balance
 
     //Set buffer to 512 bit -> 128 char 
-    ap_uint<4> con_buffer[1];
-    ap_uint<4> reads_buffer[1];
+    ap_uint<512> con_buffer[1];
+    ap_uint<512> reads_buffer[1];
 
 
     // Buffer the reads_length 
@@ -67,10 +67,10 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     }
  
     //array of stream declaration
-    /*hls::stream<ap_uint<4>> condStreams[CON_SIZE];
+    /*hls::stream<ap_uint<512>> condStreams[CON_SIZE];
     //#pragma HLS STREAM variable=condStreams depth=32
 
-    hls::stream<ap_uint<4>> readStreams[READS_SIZE];
+    hls::stream<ap_uint<512>> readStreams[READS_SIZE];
     //#pragma HLS STREAM variable=readStreams depth=32
 
 
@@ -90,8 +90,8 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     int i, j, k, l;
 
     // 512 / 4 -> 128 vectors 
-    int consensus_size_in512 = (consensus_size-1)/128 + 1;
-    int reads_size_in512 = ((consensus_size-1)/128 + 1) * 128;
+    //int consensus_size_in512 = (consensus_size-1)/128 + 1;
+    //int reads_size_in512 = ((reads_size-1)/128 + 1) * 128;
 
     consensus_size: for (i = 0; i < consensus_size; i++) {
     #pragma HLS LOOP_TRIPCOUNT min=1 max=32
@@ -100,15 +100,8 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
         int consensus_base = consensus_offset_buffer[i]; 
         int local_consensus_length =  consensus_length_buffer[i];
         //int reads_base = 0;
-        for(int jj = 0; jj < reads_size_in512; jj++){
 
-
-        int chunk_size = 128;
-        if (jj > )
-
-
-        reads_size: for (j = 0; j < chunk_size; j++ ) {
-        //reads_size: for (j = 0; j < reads_size; j++) {
+        reads_size: for (j = 0; j < reads_size; j++ ) {
         #pragma HLS LOOP_TRIPCOUNT min=1 max=256
 
             int reads_base = reads_offset_buffer[j];
@@ -117,19 +110,86 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                 consensus_size, i, local_consensus_length, reads_size,  j, local_reads_length);
             int min = 0x7fffffff; 
             int min_idx = local_consensus_length - local_reads_length + 1;
+
+
+            printf("Length Diff: %d", local_consensus_length - local_reads_length);
             con_reads_diff: for (k = 0; k <= local_consensus_length - local_reads_length; k++) {
             #pragma HLS LOOP_TRIPCOUNT min=1 max=1792
 
+                printf("k=%d\n",k);
                 // whd 
                 int whd = 0;
+
+                int vec_begin, vec_end;
+                int vec_begin_offset, vec_end_offset; 
+                vec_begin = reads_base >> 7;
+                vec_begin_offset = reads_base % 128;
+                vec_end = ((local_reads_length + reads_base) >> 7) + 1;
+                vec_end_offset = (local_reads_length + reads_base) % 128;
+                /*reads_buffer[0] = reads[vec_begin]; 
+                if (vec_begin_offset != 0) {
+                    for (int v = vec_begin_offset; v < 128; v++){
+                        if (consensus[consensus_base + k + v - vec_begin_offset] !=reads_buffer[v]){
+                            whd += qs[reads_base + v];
+                        }
+                    }
+                    vec_begin++;
+                }*/
+                int rlt_index = 0;
+                vec_reads: for(int ll = vec_begin; ll < vec_end; ll+=1){
+
+                    reads_buffer[0] = reads[ll];
+                    int abs_reads_base= ll << 7;
+                    int rlt_reads_base = (ll-vec_begin) << 7;
+                    int chunk_begin = (ll == vec_begin)? vec_begin_offset : 0;
+                    int chunk_end = (ll == vec_end - 1)? vec_end_offset: 128;
+                    
+
+                    chunk_reads: for (int v = chunk_begin; v < chunk_end; v++){
+                        long long  print_var = reads_buffer[0].range(63, 0);
+                        //printf("buffer: %x", reads_buffer[0].range(31,0));
+                        printf("buffer: %lx ", print_var);
+                        char reads_char = (reads_buffer[0] >> (v << 3)) & 0xff; 
+                        char con_char =  consensus[consensus_base + k + rlt_index]; 
+                        printf("reads_char: %d -- con_char: %d; ", reads_char, con_char);
+                        printf("qs %d %d con %d %d,", abs_reads_base, abs_reads_base+ v,  consensus_base, consensus_base + k + rlt_index);
+                        //if (consensus[consensus_base + k + rlt_reads_base + v] != reads_char){
+                        if ( con_char != reads_char){
+                
+                            whd += qs[abs_reads_base + v];
+                        }
+                        rlt_index++;
+                    }
+    
+                    printf("qs chunk end\n");
+
+                }
+                printf("whd %d\n\n", whd);
+                
                 // Optimization tree based reduction
-                reads_length: for (l = 0; l < local_reads_length; l++) {
-                #pragma HLS LOOP_TRIPCOUNT min=1 max=256
-                #pragma HLS UNROLL 
+                // ll starts from reads_base to reads_base + local_reads_length 
+                /*for(int ll = 0; ll < local_reads_length; ll+=128){
+                    int chunk_size = 128;
+                    int remain_size = local_reads_length - ll; 
+                    chunk_size = (size < chunk_size) ? size: chunk_size;    
+
+                    // If this is the beginning of the 128 block
+                    int reads_address = (ll + reads_base) >> 7;
+                    int reads_offset = (ll + reads_base) % 128;
+                    reads_buffer[0] = reads[reads_address];
+
+                    // If this is not a multiple of 
+                    reads_length: for (l = 0; l < chunk_size; l++) {
+                    //reads_length: for (l = 0; l < local_reads_length; l++) {
+                    #pragma HLS LOOP_TRIPCOUNT min=1 max=256
+                    #pragma HLS UNROLL 
+
 
                     //printf("%c", consensus[consensus_base + k + l]);
                     //printf("%c", reads[reads_base + k + l]);
-                    if (consensus[consensus_base + k + l] != reads[reads_base + l]){
+                    //if (consensus[consensus_base + k + l] !=reads[reads_base + l]){
+                    int chunk_offset = (reads_base + l) % chunk_size;
+                    if (consensus[consensus_base + k + l] !=reads_buffer[chunk_offset]){
                         whd += qs[reads_base + l];
                         //if(k == 8 & j == 1){
                         //    printf("whd: %d\t", whd);
@@ -138,7 +198,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                     //printf("whd: %d\t", whd);
                     //printf("\t");
 
-                }
+                }*/
 
                 //printf("\n");
                 if (whd < min) {
@@ -166,7 +226,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     
     int min_score = 0x7fffffff;
     int min_idx = consensus_size + 1;
-    for (i = 1; i < consensus_size; i++) {
+    score: for (i = 1; i < consensus_size; i++) {
         int score = 0;
         for (j = 0; j < reads_size; j++) {
             int tmp = min_whd[i * reads_size + j] - min_whd[j];
@@ -178,7 +238,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     //printf( "min_idx: %d\n", min_idx);
     //assert(min_idx < consensus_size);
     
-    for (j = 0; j < reads_size; j++) {
+    rank: for (j = 0; j < reads_size; j++) {
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
             //new_ref[j] = min_whd[min_idx][j];
             //new_ref_idx[j] = min_whd_idx[min_idx][j];
@@ -190,7 +250,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
         //    new_ref_idx[j] = min_whd_idx[j]; 
         //}
     }
-    for (j = 0; j < reads_size; j++) {
+    print: for (j = 0; j < reads_size; j++) {
      //printf("Read %2d whd %2d index %2d\n", j, new_ref[j], new_ref_idx[j]);
         printf("Kernel: Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
     }
