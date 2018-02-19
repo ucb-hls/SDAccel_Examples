@@ -18,7 +18,7 @@ extern "C" {
 //void Indel_Accel (ap_uint<512>* consensus, const int consensus_size, int* consensus_length, \
     //ap_uint<512>* reads, const int reads_size, int* reads_length, ap_uint<512>* qs, int* new_ref_idx) {
 void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<512>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx) {
+    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx) {
 #pragma HLS INTERFACE m_axi port=consensus offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=consensus_length offset=slave bundle=gmem
 #pragma HLS INTERFACE m_axi port=reads offset=slave bundle=gmem
@@ -38,8 +38,9 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS expression_balance
 
     //Set buffer to 512 bit -> 128 char 
-    ap_uint<512> con_buffer[1];
-    ap_uint<512> reads_buffer[1];
+    ap_uint<4> con_buffer[128];
+    char qs_buffer[128];
+    ap_uint<4> reads_buffer[128];
 
 
     // Buffer the reads_length 
@@ -138,25 +139,33 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                 int rlt_index = 0;
                 vec_reads: for(int ll = vec_begin; ll < vec_end; ll+=1){
 
-                    reads_buffer[0] = reads[ll];
                     int abs_reads_base= ll << 7;
                     int rlt_reads_base = (ll-vec_begin) << 7;
+
+                    // Fill the read buffer, hope to enable burst
+                    for (int ll_r = 0; ll_r < 128; ll_r++){
+                        reads_buffer[ll_r] = reads[abs_reads_base + ll_r];
+                        qs_buffer[ll_r] =qs[abs_reads_base + ll_r];
+                    }
+
                     int chunk_begin = (ll == vec_begin)? vec_begin_offset : 0;
                     int chunk_end = (ll == vec_end - 1)? vec_end_offset: 128;
                     
 
                     chunk_reads: for (int v = chunk_begin; v < chunk_end; v++){
-                        long long  print_var = reads_buffer[0].range(63, 0);
+                        //long long  print_var = reads_buffer[0].range(63, 0);
                         //printf("buffer: %x", reads_buffer[0].range(31,0));
-                        printf("buffer: %lx ", print_var);
-                        char reads_char = (reads_buffer[0] >> (v << 3)) & 0xff; 
+                        //printf("buffer: %lx ", print_var);
+                        //char reads_char = (reads_buffer[0] >> (v << 3)) & 0xff; 
+                        char reads_char = reads_buffer[v];
                         char con_char =  consensus[consensus_base + k + rlt_index]; 
                         printf("reads_char: %d -- con_char: %d; ", reads_char, con_char);
                         printf("qs %d %d con %d %d,", abs_reads_base, abs_reads_base+ v,  consensus_base, consensus_base + k + rlt_index);
                         //if (consensus[consensus_base + k + rlt_reads_base + v] != reads_char){
                         if ( con_char != reads_char){
                 
-                            whd += qs[abs_reads_base + v];
+                            //whd += qs[abs_reads_base + v];
+                            whd += qs_buffer[v];
                         }
                         rlt_index++;
                     }

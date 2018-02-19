@@ -214,10 +214,10 @@ int main(int argc, char** argv)
 
 
     printf("Read Buffer:");     
-    for(int i = 0 ; i < 10; i++){
+    for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
         reads_arr_buffer[i] = m[reads_arr[i]];
         unsigned char print_var = reads_arr_buffer[i];
-        printf("%x", print_var);     
+        //printf("%x", print_var);     
     }
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
