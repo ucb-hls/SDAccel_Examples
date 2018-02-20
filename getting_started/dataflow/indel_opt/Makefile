@@ -17,7 +17,8 @@ EXES=host
 
 # Kernel
 Indel_Accel_SRCS=./src/Indel_Accel.cpp
-Indel_Accel_CLFLAGS= -k Indel_Accel -I./src/ --report estimate -g --debug
+Indel_Accel_CLFLAGS= -k Indel_Accel -I./src/ --report estimate -g --debug --sp  Indel_Accel.m_axi_gmem0:bank0 --sp  Indel_Accel.m_axi_gmem1:bank1 --sp  Indel_Accel.m_axi_gmem2:bank2
+
 
 XOS=Indel_Accel
 
