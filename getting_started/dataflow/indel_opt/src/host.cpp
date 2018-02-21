@@ -243,24 +243,45 @@ int main(int argc, char** argv)
     cl::Program program(context, devices, bins);
     cl::Kernel krnl_indel(program,"Indel_Accel");
 
+    cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, new_ref_idx_ptr; 
+    con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    con_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
+    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
+    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK2; 
+    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK2; 
+
+    // Setting input and output objects
+    con_arr_buffer_ptr.obj = con_arr_buffer.data();
+    con_len_buffer_ptr.obj = con_len_buffer.data();
+    reads_arr_buffer_ptr.obj = reads_arr_buffer.data();
+    reads_len_buffer_ptr.obj = reads_len_buffer.data();
+    weights_arr_buffer_ptr.obj = weights_arr_buffer.data();
+    new_ref_idx_ptr.obj = new_ref_idx.data();
+
+    // Setting param to zero 
+    con_arr_buffer_ptr.param = 0; con_len_buffer_ptr.param = 0;
+    reads_arr_buffer_ptr.param = 0; reads_len_buffer_ptr.param = 0; 
+    weights_arr_buffer_ptr.param = 0; new_ref_idx_ptr.param = 0;
+
     //Allocate Buffer in Global Memory
 
     std::vector<cl::Memory> inBufVec, outBufVec;
-    cl::Buffer con_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,\ 
-            CON_SIZE * CON_LEN, con_arr_buffer.data());
-    cl::Buffer reads_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,\ 
-            READS_SIZE * READS_LEN, reads_arr_buffer.data());
-    cl::Buffer weights_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,\ 
-            READS_SIZE * READS_LEN, weights_arr_buffer.data());
+    cl::Buffer con_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
+            CON_SIZE * CON_LEN, &con_arr_buffer_ptr);
+    cl::Buffer reads_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
+            READS_SIZE * READS_LEN, &reads_arr_buffer_ptr);
+    cl::Buffer weights_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
+            READS_SIZE * READS_LEN, &weights_arr_buffer_ptr);
 
     std::vector<cl::Memory> con_len_vec, reads_len_vec;
-    cl::Buffer con_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
-            CON_SIZE * sizeof(int), con_len_buffer.data());
-    cl::Buffer reads_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
-            READS_SIZE * sizeof(int), reads_len_buffer.data());
+    cl::Buffer con_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
+            CON_SIZE * sizeof(int), &con_len_buffer_ptr);
+    cl::Buffer reads_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
+            READS_SIZE * sizeof(int), &reads_len_buffer_ptr);
 
-    cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-            READS_SIZE * sizeof(int), new_ref_idx.data());
+    cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY | CL_MEM_EXT_PTR_XILINX ,
+            READS_SIZE * sizeof(int), &new_ref_idx_ptr);
 
     inBufVec.push_back(con_len_input);
     inBufVec.push_back(reads_len_input);
