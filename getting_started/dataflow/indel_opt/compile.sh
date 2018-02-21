@@ -1,7 +1,8 @@
 #!/bin/bash
 echo "" > out
 
-array=(0 25 125 525 625 725 825 925 1025)
+array=(1 25 125 525 625 725 825 925 1025)
+#array=(25)
 for value in "${array[@]}"
 do 
     echo $value
