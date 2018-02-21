@@ -1,0 +1,37 @@
+{
+    "runtime": ["OpenCL"],
+    "example": "Indel Alignment ADAM",
+    "overview": [
+        "hamming distance"
+    ],
+    "key_concepts": [ ""],
+    "keywords": [ "dataflow" , "hls::stream<>"],
+    "os": [
+        "Linux"
+    ],
+    "libs": [
+        "xcl2"
+    ],
+    "em_cmd": "./host",
+    "hw_cmd": "../../../utility/nimbix/nimbix-run.py -- ./host",
+    "accelerators": [
+        {
+            "container": "Indel_Accel", 
+            "name": "Indel_Accel", 
+            "location": "src/Indel_Accel.cpp"
+        }
+    ],
+    "contributors" : [
+        {
+            "group": "Xilinx",
+            "url" : "http://www.xilinx.com"
+        }
+    ],
+    "revision" : [
+        {
+            "date" : "DEC2016",
+            "version": "1.0",
+            "description": "Initial Xilinx Release"
+        }
+    ]
+}
