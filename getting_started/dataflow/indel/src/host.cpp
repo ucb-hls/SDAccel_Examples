@@ -30,6 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xcl2.hpp"
 #include <vector>
 #include <assert.h>
+#include <chrono>
+
 
 #include "Indel_Accel.h"
 #include "Indel_Accel_SW.cpp"
@@ -164,6 +166,7 @@ int main(int argc, char** argv)
   int *con_len, con_size, *reads_len, reads_size; 
 
   // Malloc the largest array 
+  auto start = std::chrono::high_resolution_clock::now();
   con_arr = (char*) malloc( CON_SIZE * CON_LEN * sizeof(char));
   reads_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
   weights_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
@@ -171,7 +174,12 @@ int main(int argc, char** argv)
   parse( con,1, con_arr, &con_len, &con_size);
   parse( reads, 4, reads_arr, &reads_len, &reads_size);
   parse( reads, 5, weights_arr, &reads_len, &reads_size);
-   
+
+  auto finish = std::chrono::high_resolution_clock::now();
+  //std::chrono::duration<double> elapsed = finish - start;   
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+  std::cout << "Parsing time is:" << duration.count() << " ms\n";
+
   int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
   int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
   int* new_ref = (int*) malloc(reads_size * sizeof(int));
@@ -184,6 +192,7 @@ int main(int argc, char** argv)
   printf("Software Success!\n");
     //return 0;
     //Allocate Memory in Host Memory
+    start = std::chrono::high_resolution_clock::now();
     std::vector<char,aligned_allocator<char>> con_arr_buffer     ( con_arr, con_arr + CON_SIZE * CON_LEN);
     std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
     std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
@@ -236,6 +245,10 @@ int main(int argc, char** argv)
     inBufVec.push_back(weights_arr_input);
     outBufVec.push_back(new_ref_idx_output);
 
+    finish = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    std::cout << "Preprocess time is:" << duration.count() << " ms\n";
+
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
 
@@ -265,7 +278,7 @@ int main(int argc, char** argv)
     double nanoSeconds = event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
             event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
-    printf("OpenCl Execution time is: %0.3f milliseconds \n", nanoSeconds/ 1000000.0);
+    printf("OpenCl Execution time is: %0.3f ms\n", nanoSeconds/ 1000000.0);
 
     // Compare the results of the Device to the simulation
     int match = 0;
