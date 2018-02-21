@@ -118,9 +118,9 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
           //printf("%c", p[k]);
           strncpy(&con_arr[base + k], &p[k], 1);
           //printf("%d\n", line_num* len + k);
-          fprintf(stderr, "%c", con_arr[base + k]);
+          //fprintf(stderr, "%c", con_arr[base + k]);
         }
-        fprintf(stderr, "\n");
+        //fprintf(stderr, "\n");
       }
       i++;
     }
@@ -178,7 +178,8 @@ int main(int argc, char** argv)
   auto finish = std::chrono::high_resolution_clock::now();
   //std::chrono::duration<double> elapsed = finish - start;   
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-  std::cout << "Parsing time is:" << duration.count() << " ms\n";
+  std::cout << "Parsing time is :" << duration.count() << " ms\n";
+  //printf("Parse time is: %0.3f ms\n", duration.count());
 
   int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
   int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
@@ -199,10 +200,17 @@ int main(int argc, char** argv)
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
 
+
     std::vector<int,aligned_allocator<int>> new_ref_idx(READS_SIZE);
     for(int i = 0 ; i < READS_SIZE; i++){
         new_ref_idx[i] = 0;
     }
+    finish = std::chrono::high_resolution_clock::now();
+
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    std::cout << "Preprocess time is : " << duration.count() << " ms\n";
+    //printf("Preprocess time is: %0.3f ms\n", duration.count());
+
 
     //OPENCL HOST CODE AREA START
     std::vector<cl::Device> devices = xcl::get_xil_devices();
@@ -244,10 +252,6 @@ int main(int argc, char** argv)
     inBufVec.push_back(reads_arr_input);
     inBufVec.push_back(weights_arr_input);
     outBufVec.push_back(new_ref_idx_output);
-
-    finish = std::chrono::high_resolution_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-    std::cout << "Preprocess time is:" << duration.count() << " ms\n";
 
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);

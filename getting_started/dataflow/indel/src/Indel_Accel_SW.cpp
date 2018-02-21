@@ -9,7 +9,7 @@ void whd (char* consensus, const int consensus_size, int* consensus_length, \
         int reads_base = 0;
         for (j = 0; j < reads_size; j++) {
             int local_reads_length = reads_length[j];
-            fprintf(stderr, "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
+           // fprintf(stderr, "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
                 consensus_size, i, local_consensus_length, reads_size,  j, local_reads_length);
             int min = 0x7fffffff; 
             int min_idx = local_consensus_length - local_reads_length + 1;
@@ -40,7 +40,7 @@ void whd (char* consensus, const int consensus_size, int* consensus_length, \
                }
 
             }
-            fprintf(stderr, "min_idx %d\n", min_idx);
+          //  fprintf(stderr, "min_idx %d\n", min_idx);
             assert(min_idx <= local_consensus_length - local_reads_length);
             
             min_whd[i * reads_size + j] = min;
@@ -64,7 +64,7 @@ void print_whd (int* min_whd, int consensus_size, int reads_size) {
 }
 
 void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_size, int* new_ref, int* new_ref_idx) {
-    print_whd(min_whd, consensus_size, reads_size);
+    //print_whd(min_whd, consensus_size, reads_size);
     // might need to reduce the bits used in here 
     assert(new_ref_idx != NULL); 
     assert(min_whd != NULL); 
@@ -81,7 +81,7 @@ void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_si
         min_idx = (score < min_score) ? i : min_idx;
         //scores[i] = score;
     }
-    fprintf(stderr, "min_idx: %d\n", min_idx);
+    //fprintf(stderr, "min_idx: %d\n", min_idx);
     assert(min_idx < consensus_size);
     
     for (j = 0; j < reads_size; j++) {
@@ -95,7 +95,7 @@ void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_si
     }
 
     for (j = 0; j < reads_size; j++) {
-        printf("Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
+        ; //printf("Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
     }
 }
 
