@@ -1,2 +1,2 @@
-make check TARGETS=hw_emu DEVICES=$AWS_PLATFORM all  
+make check TARGETS=sw_emu DEVICES=$AWS_PLATFORM check_ARGS=1102 all  
 #make TARGETS=hw DEVICES=$AWS_PLATFORM all  
