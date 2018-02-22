@@ -41,7 +41,8 @@
 // Put input and output onto different memory banks 
 // https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
 //
-typedef std::map<char, ap_uint<4>> BasePairMap;
+//typedef std::map<char, ap_uint<4>> BasePairMap;
+typedef std::map<char, char> BasePairMap;
 
 int count_lines(char* filename){
 
@@ -204,21 +205,38 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
+    std::vector<char,aligned_allocator<char>> con_arr_buffer     ( CON_SIZE * CON_LEN >> 1);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
+    std::vector<char,aligned_allocator<char>> reads_arr_buffer     ( READS_SIZE * READS_LEN >> 1);
     std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
-    for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-        con_arr_buffer[i] = m[con_arr[i]];
-    }
+   // for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+   //     con_arr_buffer[i] = m[con_arr[i]];
+   // }
 
+    for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+        int idx = i >> 1;
+        int offset = (i % 2) << 2;
+        char c = m[con_arr[i]] & 0xf;
+        con_arr_buffer[idx] = (con_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
+        //printf("con_arr_buffer[%d + %d]: %hhX \n", idx, offset, con_arr_buffer[idx]);
+    }
 
     printf("Read Buffer:");     
+   // for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
+   //     reads_arr_buffer[i] = m[reads_arr[i]];
+   //     unsigned char print_var = reads_arr_buffer[i];
+   //     //printf("%x", print_var);     
+   // }
     for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
-        reads_arr_buffer[i] = m[reads_arr[i]];
-        unsigned char print_var = reads_arr_buffer[i];
-        //printf("%x", print_var);     
+        int idx = i >> 1;
+        int offset = (i % 2) << 2;
+        char c = m[reads_arr[i]] & 0xf;
+        reads_arr_buffer[idx] = (reads_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
+        //printf("reads_arr_buffer[%d]: %hhX \n", idx, (char)reads_arr_buffer[idx]);
     }
+
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
 
@@ -246,10 +264,10 @@ int main(int argc, char** argv)
     cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, new_ref_idx_ptr; 
     con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
     con_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
-    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
-    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK2; 
-    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK2; 
+    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK0; 
 
     // Setting input and output objects
     con_arr_buffer_ptr.obj = con_arr_buffer.data();
