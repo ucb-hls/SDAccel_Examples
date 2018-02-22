@@ -18,7 +18,9 @@ EXES=host
 # Kernel
 Indel_Accel_SRCS=./src/Indel_Accel.cpp
 Indel_Accel_CLFLAGS= -k Indel_Accel -I./src/ --report estimate -g --debug --max_memory_ports Indel_Accel
-Indel_Accel_LDCLFLAGS= --sp  Indel_Accel_1.m_axi_gmem0:bank0 --sp  Indel_Accel_1.m_axi_gmem1:bank1 --sp  Indel_Accel_1.m_axi_gmem2:bank2
+Indel_Accel_LDCLFLAGS=--xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI
+Indel_Accel_NDEVICES=xilinx:adm-pcie-7v3:1ddr
+
 
 
 XOS=Indel_Accel

@@ -264,10 +264,10 @@ int main(int argc, char** argv)
     cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, new_ref_idx_ptr; 
     con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
     con_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
+    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
+    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK2; 
+    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK2; 
 
     // Setting input and output objects
     con_arr_buffer_ptr.obj = con_arr_buffer.data();
