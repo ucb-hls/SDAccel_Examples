@@ -19,6 +19,7 @@ EXES=host
 # OpenCL file
 Indel_Accel_SRCS=./src/Indel_Accel.cl
 
+# XIlinx opencl does not work for mulitple kernels
 #Indel_Accel_CLFLAGS= -I./src/   --report estimate -g --debug --max_memory_ports Indel_Accel
 Indel_Accel_CLFLAGS= -I./src/  --debug --max_memory_ports Indel_Accel
 #Indel_Accel_CLFLAGS= -I/usr/include/linux/ -I/opt/Xilinx/SDx/2017.1.op/ext/glibc-2.17/glibc-2.17/ -I/opt/Xilinx/SDx/2017.1.op/ext/glibc-2.17/glibc-2.17/include/ -I/opt/Xilinx/SDx/2017.1.op/Vivado_HLS/include/ --report estimate -g --debug --max_memory_ports Indel_Accel 
