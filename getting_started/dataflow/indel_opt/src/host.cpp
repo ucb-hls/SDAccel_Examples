@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <map>
 
+#include <chrono>
 #include "ap_int.h"
 
 #include "Indel_Accel.h"
@@ -127,9 +128,9 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
                     //printf("%c", p[k]);
                     strncpy(&con_arr[base + k], &p[k], 1);
                     //printf("%d\n", line_num* len + k);
-                    fprintf(stderr, "%c", con_arr[base + k]);
+                    //fprintf(stderr, "%c", con_arr[base + k]);
                 }
-                fprintf(stderr, "\n");
+               	//fprintf(stderr, "\n");
             }
             i++;
         }
@@ -157,7 +158,7 @@ int main(int argc, char** argv)
     }
     
     char* test_num = argv[1];
-    const char* file_prefix = "./src/ir_toy/";
+    const char* file_prefix = "../indel_tests/ir_toy/";
     char con[256] = "";
     strcat(con, file_prefix);
     strcat(con, test_num);
@@ -181,6 +182,7 @@ int main(int argc, char** argv)
     int *con_len, con_size, *reads_len, reads_size; 
 
     // Malloc the largest array 
+  auto start = std::chrono::high_resolution_clock::now();
     con_arr = (char*) malloc( CON_SIZE * CON_LEN * sizeof(char));
     reads_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
     weights_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
@@ -188,6 +190,14 @@ int main(int argc, char** argv)
     parse( con,1, con_arr, &con_len, &con_size);
     parse( reads, 4, reads_arr, &reads_len, &reads_size);
     parse( reads, 5, weights_arr, &reads_len, &reads_size);
+
+  auto finish = std::chrono::high_resolution_clock::now();
+  //std::chrono::duration<double> elapsed = finish - start;   
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+  std::cout << "Parsing time is :" << duration.count() << " ms\n";
+  //printf("Parse time is: %0.3f ms\n", duration.count());
+
+
 
     int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
     int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
@@ -205,6 +215,7 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
+    start = std::chrono::high_resolution_clock::now();
     //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
     std::vector<char,aligned_allocator<char>> con_arr_buffer     ( CON_SIZE * CON_LEN >> 1);
     //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
@@ -245,6 +256,13 @@ int main(int argc, char** argv)
         new_ref_idx[i] = 0;
     }
     printf("\n");
+    finish = std::chrono::high_resolution_clock::now();
+
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    std::cout << "Preprocess time is : " << duration.count() << " ms\n";
+    //printf("Preprocess time is: %0.3f ms\n", duration.count());
+
+
 
     //OPENCL HOST CODE AREA START
     std::vector<cl::Device> devices = xcl::get_xil_devices();
@@ -264,10 +282,10 @@ int main(int argc, char** argv)
     cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, new_ref_idx_ptr; 
     con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
     con_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
-    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
-    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK2; 
-    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK2; 
+    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK0; 
 
     // Setting input and output objects
     con_arr_buffer_ptr.obj = con_arr_buffer.data();
@@ -337,7 +355,7 @@ int main(int argc, char** argv)
     double nanoSeconds = event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
         event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
-    printf("OpenCl Execution time is: %0.3f milliseconds \n", nanoSeconds/ 1000000.0);
+    printf("OpenCl Execution time is: %0.3f ms\n", nanoSeconds/ 1000000.0);
 
     // Compare the results of the Device to the simulation
     int match = 0;

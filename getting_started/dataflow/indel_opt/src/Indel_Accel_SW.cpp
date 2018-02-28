@@ -64,7 +64,7 @@ void print_whd (int* min_whd, int consensus_size, int reads_size) {
 }
 
 void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_size, int* new_ref, int* new_ref_idx) {
-    print_whd(min_whd, consensus_size, reads_size);
+    //print_whd(min_whd, consensus_size, reads_size);
     // might need to reduce the bits used in here 
     assert(new_ref_idx != NULL); 
     assert(min_whd != NULL); 
