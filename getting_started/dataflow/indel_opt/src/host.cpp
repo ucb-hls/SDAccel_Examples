@@ -38,12 +38,45 @@
 #include "Indel_Accel.h"
 #include "Indel_Accel_SW.cpp"
 
+#define WORK_GROUP 4 
+#define WORK_ITEM_PER_GROUP 1
 // JENNY TODO
 // Put input and output onto different memory banks 
 // https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
 //
 //typedef std::map<char, ap_uint<4>> BasePairMap;
 typedef std::map<char, char> BasePairMap;
+
+void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, int* __restrict new_ref_idx) {
+    int new_ref[READS_SIZE];
+
+    int min_score = 0x7fffffff;
+    int min_idx = consensus_size + 1;
+    int i, j;
+    score: for (i = 1; i < consensus_size; i++) {
+        int score = 0;
+        for (j = 0; j < reads_size; j++) {
+            int tmp = min_whd[(i * reads_size + j) << 1] - min_whd[j << 1];
+            score += (tmp > 0) ? tmp: -tmp;
+        }
+        min_idx = (score < min_score) ? i : min_idx;
+        //scores[i] = score;
+    }
+    //printf( "min_idx: %d\n", min_idx);
+    //assert(min_idx < consensus_size);
+    
+    rank: for (j = 0; j < reads_size; j++) {
+            new_ref[j] = min_whd[(min_idx * reads_size + j) << 1];
+            new_ref_idx[j] = min_whd[((min_idx * reads_size +j) << 1) + 1];
+            }
+
+    print: for (j = 0; j < reads_size; j++) {
+     //printf("Read %2d whd %2d index %2d\n", j, new_ref[j], new_ref_idx[j]);
+        printf("Kernel: Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
+    }
+}
+
+
 
 int count_lines(char* filename){
 
@@ -251,8 +284,11 @@ int main(int argc, char** argv)
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
 
-    std::vector<int,aligned_allocator<int>> new_ref_idx(READS_SIZE);
-    for(int i = 0 ; i < READS_SIZE; i++){
+    std::vector<int,aligned_allocator<int>> whd_buffer(con_size * reads_size << 1);
+    //std::vector<int,aligned_allocator<int>> new_ref_idx(reads_size);
+    int * new_ref_idx = new int [reads_size];
+
+    for(int i = 0 ; i < reads_size; i++){
         new_ref_idx[i] = 0;
     }
     printf("\n");
@@ -279,13 +315,15 @@ int main(int argc, char** argv)
     cl::Program program(context, devices, bins);
     cl::Kernel krnl_indel(program,"Indel_Accel");
 
-    cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, new_ref_idx_ptr; 
+    cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, whd_buffer_ptr,  new_ref_idx_ptr; 
     con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
     con_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK0; 
+    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
+    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
+    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK2; 
+    //new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK2; 
+    whd_buffer_ptr.flags = XCL_MEM_DDR_BANK3;
+ 
 
     // Setting input and output objects
     con_arr_buffer_ptr.obj = con_arr_buffer.data();
@@ -293,12 +331,14 @@ int main(int argc, char** argv)
     reads_arr_buffer_ptr.obj = reads_arr_buffer.data();
     reads_len_buffer_ptr.obj = reads_len_buffer.data();
     weights_arr_buffer_ptr.obj = weights_arr_buffer.data();
-    new_ref_idx_ptr.obj = new_ref_idx.data();
+    whd_buffer_ptr.obj = whd_buffer.data();
+    //new_ref_idx_ptr.obj = new_ref_idx.data();
 
     // Setting param to zero 
     con_arr_buffer_ptr.param = 0; con_len_buffer_ptr.param = 0;
     reads_arr_buffer_ptr.param = 0; reads_len_buffer_ptr.param = 0; 
     weights_arr_buffer_ptr.param = 0; new_ref_idx_ptr.param = 0;
+    whd_buffer_ptr.param = 0;
 
     //Allocate Buffer in Global Memory
 
@@ -316,15 +356,18 @@ int main(int argc, char** argv)
     cl::Buffer reads_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
             READS_SIZE * sizeof(int), &reads_len_buffer_ptr);
 
-    cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY | CL_MEM_EXT_PTR_XILINX ,
-            READS_SIZE * sizeof(int), &new_ref_idx_ptr);
+    cl::Buffer whd_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY| CL_MEM_EXT_PTR_XILINX ,
+            reads_size * con_size * 2 * sizeof(int), &whd_buffer_ptr);
+    //cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY | CL_MEM_EXT_PTR_XILINX ,
+    //        READS_SIZE * sizeof(int), &new_ref_idx_ptr);
 
     inBufVec.push_back(con_len_input);
     inBufVec.push_back(reads_len_input);
     inBufVec.push_back(con_arr_input);
     inBufVec.push_back(reads_arr_input);
     inBufVec.push_back(weights_arr_input);
-    outBufVec.push_back(new_ref_idx_output);
+    outBufVec.push_back(whd_output);
+    //outBufVec.push_back(new_ref_idx_output);
 
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
@@ -338,24 +381,38 @@ int main(int argc, char** argv)
     krnl_indel.setArg(narg++, reads_size);
     krnl_indel.setArg(narg++, reads_len_input);
     krnl_indel.setArg(narg++, weights_arr_input);
+    krnl_indel.setArg(narg++, whd_output);
 
-    krnl_indel.setArg(narg++, new_ref_idx_output);
+    //krnl_indel.setArg(narg++, new_ref_idx_output);
 
     //Launch the Kernel
-    cl::Event event;
-    q.enqueueTask(krnl_indel, NULL, &event);
+    //cl::Event event;
 
-    event.wait();
+    start = std::chrono::high_resolution_clock::now(); 
+    int work_group = WORK_GROUP;
 
+    cl::Event events[work_group];
+
+    for(int i = 0; i < work_group; i++) {
+        krnl_indel.setArg(narg+0, i);
+        krnl_indel.setArg(narg+1, work_group);
+
+        q.enqueueTask(krnl_indel, NULL, &events[i]);
+    }
+
+    q.finish();
+
+    //event.wait();
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
     //OPENCL HOST CODE AREA END
+    
+    Indel_Rank(con_size, reads_size, min_whd, new_ref_idx); 
+    finish = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
 
-    double nanoSeconds = event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
-        event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
-
-    printf("OpenCl Execution time is: %0.3f ms\n", nanoSeconds/ 1000000.0);
+    std::cout << "OpenCl Execution time is: " << duration.count() << " ms\n";  
 
     // Compare the results of the Device to the simulation
     int match = 0;
@@ -369,6 +426,7 @@ int main(int argc, char** argv)
         }
     }
 
+    delete[] new_ref_idx;
     std::cout << "TEST " << (match ? "FAILED" : "PASSED") << std::endl; 
     return (match ? EXIT_FAILURE :  EXIT_SUCCESS);
 }

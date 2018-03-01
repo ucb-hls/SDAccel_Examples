@@ -12,20 +12,51 @@
 // ap_uint<512> to round it to power of 2 
 // ap_int<512> is the most efficient for global memory 
 // Assign reads and consensus to different bundles for memory banking optimizations
-//
+
+
+
+void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, int* __restrict new_ref_idx) {
+    int new_ref[READS_SIZE];
+
+    int min_score = 0x7fffffff;
+    int min_idx = consensus_size + 1;
+    int i, j;
+    score: for (i = 1; i < consensus_size; i++) {
+        int score = 0;
+        for (j = 0; j < reads_size; j++) {
+            int tmp = min_whd[(i * reads_size + j) << 1] - min_whd[j << 1];
+            score += (tmp > 0) ? tmp: -tmp;
+        }
+        min_idx = (score < min_score) ? i : min_idx;
+        //scores[i] = score;
+    }
+    //printf( "min_idx: %d\n", min_idx);
+    //assert(min_idx < consensus_size);
+    
+    rank: for (j = 0; j < reads_size; j++) {
+            new_ref[j] = min_whd[(min_idx * reads_size + j) << 1];
+            new_ref_idx[j] = min_whd[((min_idx * reads_size +j) << 1) + 1];
+            }
+
+    print: for (j = 0; j < reads_size; j++) {
+     //printf("Read %2d whd %2d index %2d\n", j, new_ref[j], new_ref_idx[j]);
+        printf("Kernel: Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
+    }
+}
+
 extern "C" {
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
 //void Indel_Accel (ap_uint<512>* consensus, const int consensus_size, int* consensus_length, \
     //ap_uint<512>* reads, const int reads_size, int* reads_length, ap_uint<512>* qs, int* new_ref_idx) {
 void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx) {
+    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* min_whd, int global_id, int global_threads) {
+    //ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* min_whd, int* new_ref_idx, int global_id, int global_threads) {
 #pragma HLS INTERFACE m_axi port=consensus offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads offset=slave bundle=gmem1
 #pragma HLS INTERFACE m_axi port=reads_length offset=slave bundle=gmem1
 #pragma HLS INTERFACE m_axi port=qs offset=slave bundle=gmem2
-#pragma HLS INTERFACE m_axi port=new_ref_idx offset=slave bundle=gmem2
-
+#pragma HLS INTERFACE m_axi port=min_whd offset=slave bundle=gmem3
 #pragma HLS INTERFACE s_axilite port=consensus bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_size bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_length bundle=control
@@ -33,10 +64,15 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS INTERFACE s_axilite port=reads_size bundle=control
 #pragma HLS INTERFACE s_axilite port=reads_length bundle=control
 #pragma HLS INTERFACE s_axilite port=qs bundle=control
-#pragma HLS INTERFACE s_axilite port=new_ref_idx bundle=control
+#pragma HLS INTERFACE s_axilite port=min_whd bundle=control
+#pragma HLS INTERFACE s_axilite port=global_id bundle=control
+#pragma HLS INTERFACE s_axilite port=global_threads bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
+
 #pragma HLS expression_balance
 
+//#pragma HLS INTERFACE m_axi port=new_ref_idx offset=slave bundle=gmem2
+//#pragma HLS INTERFACE s_axilite port=new_ref_idx bundle=control
     //Set buffer to 512 bit -> 128 char 
     // Tile the output with the consensus 
     ap_uint<4> con_buffer_0[128];
@@ -45,6 +81,8 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     char qs_buffer_1[128];
     ap_uint<4> reads_buffer_0[128];
     ap_uint<4> reads_buffer_1[128];
+
+
 
 
     // Buffer the reads_length 
@@ -88,32 +126,40 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     for (int i = 0 ; i < READS_SIZE; i ++){
         read_input(reads, readStreams[i], reads_length[i]);
     }*/
-    int min_whd[CON_SIZE * READS_SIZE];
-    int min_whd_idx[CON_SIZE * READS_SIZE];
-    int new_ref[READS_SIZE];
+    //int min_whd[CON_SIZE * READS_SIZE];
+    //int min_whd_idx[CON_SIZE * READS_SIZE];
+    //int new_ref[READS_SIZE];
     //int consensus_base = 0; 
     int i, j, k, l;
 
     // 512 / 4 -> 128 vectors 
     //int consensus_size_in512 = (consensus_size-1)/128 + 1;
     //int reads_size_in512 = ((reads_size-1)/128 + 1) * 128;
+ 
+    int trunck_size = (reads_size % global_threads == 0) ? reads_size / global_threads : (reads_size  + global_threads) / global_threads;
+    int thread_work_start = global_id * trunck_size;
+    int thread_work_end = (global_id + 1) * trunck_size;
+    thread_work_end = (thread_work_end < reads_size) ? thread_work_end: reads_size;
 
-    consensus_size: for (i = 0; i < consensus_size; i++) {
-    #pragma HLS LOOP_TRIPCOUNT min=1 max=32
+    reads_size: for (j = thread_work_start; j < thread_work_end; j++ ) {
+    #pragma HLS LOOP_TRIPCOUNT min=1 max=256
 
+        int reads_base = reads_offset_buffer[j];
+        int local_reads_length = reads_length_buffer[j];
 
-        int consensus_base = consensus_offset_buffer[i]; 
-        int local_consensus_length =  consensus_length_buffer[i];
-        //int reads_base = 0
-        // Prefetech cons 
+        consensus_size: for (i = 0; i < consensus_size; i++) {
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=32
 
-        reads_size: for (j = 0; j < reads_size; j++ ) {
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=256
+            int consensus_base = consensus_offset_buffer[i]; 
+            int local_consensus_length =  consensus_length_buffer[i];
+     
 
-            int reads_base = reads_offset_buffer[j];
-            int local_reads_length = reads_length_buffer[j];
             //printf( "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
                 consensus_size, i, local_consensus_length, reads_size,  j, local_reads_length);
+            //int reads_base = 0
+            // Prefetech cons 
+
+
             int min = 0x7fffffff; 
             int min_idx = local_consensus_length - local_reads_length + 1;
 
@@ -127,6 +173,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
             printf("Length Diff: %d\n", local_consensus_length - local_reads_length);
            //con_reads_diff: for (k = 0; k <= local_consensus_length - local_reads_length; k++) {
             con_reads_diff: for (k = 0; k <= local_consensus_length - local_reads_length; k+=1) {
+            #pragma HLS unroll factor=2
             #pragma HLS LOOP_TRIPCOUNT min=1 max=1792
 
                 printf("k=%d\n",k);
@@ -189,6 +236,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                     
 
                     chunk_run: for (int v = chunk_begin; v < chunk_end; v++){
+                    #pragma HLS UNROLL
                         //long long  print_var = reads_buffer[0].range(63, 0);
                         //printf("buffer: %x", reads_buffer[0].range(31,0));
                         //printf("buffer: %lx ", print_var);
@@ -258,8 +306,12 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
             
             //min_whd[i][j] = min;
             //min_whd_idx[i][j] = min_idx;
-            min_whd[i * reads_size + j] = min;
-            min_whd_idx[i * reads_size + j] = min_idx;
+            //min_whd[i * reads_size + j] = min;
+            //min_whd_idx[i * reads_size + j] = min_idx;
+
+            min_whd[i * reads_size + j << 1] = min;
+            min_whd[(i * reads_size + j << 1) + 1] = min_idx;
+ 
  
             //reads_base += local_reads_length;
             //reads_base = reads_offset_buffer[j];
@@ -269,8 +321,9 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
         //printf("%d %d\n", consensus_base, consensus_offset_buffer[i]);
         //consensus_base = consensus_offset_buffer[i];
     }
+}
     
-    int min_score = 0x7fffffff;
+/*    int min_score = 0x7fffffff;
     int min_idx = consensus_size + 1;
     score: for (i = 1; i < consensus_size; i++) {
         int score = 0;
@@ -301,7 +354,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
         printf("Kernel: Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
     }
 
-}
+}*/
 
 }
 
