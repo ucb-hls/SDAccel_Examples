@@ -56,6 +56,7 @@ void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, 
     score: for (i = 1; i < consensus_size; i++) {
         int score = 0;
         for (j = 0; j < reads_size; j++) {
+            printf("[%d,%d]-%d\t", i, j, min_whd[(i * reads_size + j) << 1]);
             int tmp = min_whd[(i * reads_size + j) << 1] - min_whd[j << 1];
             score += (tmp > 0) ? tmp: -tmp;
         }
@@ -249,37 +250,37 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     start = std::chrono::high_resolution_clock::now();
-    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
-    std::vector<char,aligned_allocator<char>> con_arr_buffer     ( CON_SIZE * CON_LEN >> 1);
-    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
-    std::vector<char,aligned_allocator<char>> reads_arr_buffer     ( READS_SIZE * READS_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
+    //std::vector<char,aligned_allocator<char>> con_arr_buffer     ( CON_SIZE * CON_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> reads_arr_buffer     ( READS_SIZE * READS_LEN >> 1);
     std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
-   // for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-   //     con_arr_buffer[i] = m[con_arr[i]];
-   // }
-
     for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[con_arr[i]] & 0xf;
-        con_arr_buffer[idx] = (con_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("con_arr_buffer[%d + %d]: %hhX \n", idx, offset, con_arr_buffer[idx]);
+        con_arr_buffer[i] = m[con_arr[i]];
     }
+
+   // for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[con_arr[i]] & 0xf;
+   //     con_arr_buffer[idx] = (con_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("con_arr_buffer[%d + %d]: %hhX \n", idx, offset, con_arr_buffer[idx]);
+   // }
 
     printf("Read Buffer:");     
-   // for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
-   //     reads_arr_buffer[i] = m[reads_arr[i]];
-   //     unsigned char print_var = reads_arr_buffer[i];
-   //     //printf("%x", print_var);     
-   // }
     for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[reads_arr[i]] & 0xf;
-        reads_arr_buffer[idx] = (reads_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("reads_arr_buffer[%d]: %hhX \n", idx, (char)reads_arr_buffer[idx]);
+        reads_arr_buffer[i] = m[reads_arr[i]];
+        //unsigned char print_var = reads_arr_buffer[i];
+        //printf("%x", print_var);     
     }
+  //  for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
+  //      int idx = i >> 1;
+  //      int offset = (i % 2) << 2;
+  //      char c = m[reads_arr[i]] & 0xf;
+  //      reads_arr_buffer[idx] = (reads_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
+  //      //printf("reads_arr_buffer[%d]: %hhX \n", idx, (char)reads_arr_buffer[idx]);
+  //  }
 
     std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
     std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
@@ -406,9 +407,11 @@ int main(int argc, char** argv)
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
+
     //OPENCL HOST CODE AREA END
     
-    Indel_Rank(con_size, reads_size, min_whd, new_ref_idx); 
+    int * whd_buffer_arr = &whd_buffer[0];
+    Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
     finish = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
 

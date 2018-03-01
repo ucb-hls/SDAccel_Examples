@@ -249,7 +249,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                         con_char = con_char & 0xf;
                         printf("reads_char: %x -- con_char: %x; ", reads_char, con_char);
                         printf("qs %d %d con %d %d,", abs_reads_base, abs_reads_base+ v,  consensus_base, consensus_base + k + rlt_index);
-                        if (( con_char & 0x4) != (reads_char & 0x4)){
+                        if (con_char != reads_char){
                 
                             //whd += qs[abs_reads_base + v];
                             whd += (ll % 2 == 0) ? qs_buffer_0[v] : qs_buffer_1[v];
@@ -303,7 +303,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                }
 
             }
-            //printf( "min_idx %d\n", min_idx);
+            printf( "[%d, %d]-Kernel:min_idx %d min %d\n", i, j, min_idx, min);
             //assert(min_idx <= local_consensus_length - local_reads_length);
             
             //min_whd[i][j] = min;
@@ -311,7 +311,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
             //min_whd[i * reads_size + j] = min;
             //min_whd_idx[i * reads_size + j] = min_idx;
 
-            min_whd[i * reads_size + j << 1] = min;
+            min_whd[(i * reads_size + j) << 1] = min;
             min_whd[(i * reads_size + j << 1) + 1] = min_idx;
  
  
