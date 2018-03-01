@@ -18,10 +18,10 @@ EXES=host
 # Kernel
 Indel_Accel_SRCS=./src/Indel_Accel.cpp
 Indel_Accel_CLFLAGS= -k Indel_Accel -I./src/ --report estimate -g --debug --max_memory_ports Indel_Accel
-Indel_Accel_LDCLFLAGS=--xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI --xp vivado_param:project.runs.noReportGeneration=0
+Indel_Accel_LDCLFLAGS= --nk Indel_Accel:4 --xp vivado_param:project.runs.noReportGeneration=0 --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI --xp misc:map_connect=add.kernel.Indel_Accel_1.M_AXI_GMEM3.core.OCL_REGION_0.M03_AXI  --xp misc:map_connect=add.kernel.Indel_Accel_2.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_2.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_2.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI --xp misc:map_connect=add.kernel.Indel_Accel_2.M_AXI_GMEM3.core.OCL_REGION_0.M03_AXI --xp misc:map_connect=add.kernel.Indel_Accel_3.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_3.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_3.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI --xp misc:map_connect=add.kernel.Indel_Accel_3.M_AXI_GMEM3.core.OCL_REGION_0.M03_AXI --xp misc:map_connect=add.kernel.Indel_Accel_4.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_4.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_4.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI --xp misc:map_connect=add.kernel.Indel_Accel_4.M_AXI_GMEM3.core.OCL_REGION_0.M03_AXI 
+
+
 Indel_Accel_NDEVICES=xilinx:adm-pcie-7v3:1ddr
-
-
 
 XOS=Indel_Accel
 

@@ -136,7 +136,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
     //int consensus_size_in512 = (consensus_size-1)/128 + 1;
     //int reads_size_in512 = ((reads_size-1)/128 + 1) * 128;
  
-    int trunck_size = (reads_size % global_threads == 0) ? reads_size / global_threads : (reads_size  + global_threads) / global_threads;
+    int trunck_size = (reads_size % global_threads == 0) ? (reads_size / global_threads) : ((reads_size  + global_threads) / global_threads);
     int thread_work_start = global_id * trunck_size;
     int thread_work_end = (global_id + 1) * trunck_size;
     thread_work_end = (thread_work_end < reads_size) ? thread_work_end: reads_size;
@@ -242,12 +242,14 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
                         //printf("buffer: %lx ", print_var);
                         //char reads_char = (reads_buffer[0] >> (v << 3)) & 0xff; 
                         char reads_char = (ll % 2 == 0) ? reads_buffer_0[v]: reads_buffer_1[v];
+                        reads_char = reads_char & 0xf;
                         //char con_char =  consensus[consensus_base + k + rlt_index]; 
                         int con_idx = (k + rlt_index) % 128;
                         char con_char =  (ll % 2 == 0) ? con_buffer_0[v]: con_buffer_1[v]; 
-                        printf("reads_char: %d -- con_char: %d; ", reads_char, con_char);
+                        con_char = con_char & 0xf;
+                        printf("reads_char: %x -- con_char: %x; ", reads_char, con_char);
                         printf("qs %d %d con %d %d,", abs_reads_base, abs_reads_base+ v,  consensus_base, consensus_base + k + rlt_index);
-                        if ( con_char != reads_char){
+                        if (( con_char & 0x4) != (reads_char & 0x4)){
                 
                             //whd += qs[abs_reads_base + v];
                             whd += (ll % 2 == 0) ? qs_buffer_0[v] : qs_buffer_1[v];

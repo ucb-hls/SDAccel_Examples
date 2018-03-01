@@ -20,6 +20,7 @@
             "name": "Indel_Accel", 
             "ldclflags" : "--sp Indel_Accel_1.m_axi_gmem0:bank0 --sp Indel_Accel_1.m_axi_gmem1:bank1 --sp Indel_Accel_1.m_axi_gmem2:bank2",
             "max_memory_ports": "true", 
+            "num_compute_units" : "4",
             "location": "src/Indel_Accel.cpp"
         }
     ],
