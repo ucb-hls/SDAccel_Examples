@@ -107,6 +107,58 @@ int count_lines(char* filename){
     return count;
 }
 
+int* parse_schedule (const char* file, int* num_tests) {
+
+    FILE *fp;
+    fp=fopen(file, "r");
+    if (fp == NULL){
+        printf("File not found: %s!\n", file);
+        exit(EXIT_FAILURE);
+    }
+    char separators[] = " ";
+    char *line = NULL;
+    size_t line_len = 0;
+    ssize_t read;
+
+    int line_num = 0;
+    int base = 0;
+    int* file_index = NULL;
+    int size = 0;
+    while ((read = getline(&line, &line_len, fp)) != -1) {
+        //printf("Retrieved line of length %zu :\n", read);
+        //printf("%s", line);
+        printf("String length%d\n", line_len);
+        char* tmp = (char*) malloc(line_len * sizeof(char));
+        strcpy(tmp, line);
+ 
+        char *p = strtok(line, separators); 
+        assert (p != NULL);
+        int i = 0;
+        while (p != NULL){
+            p = strtok(NULL, separators);
+            i++;
+        }
+        size = i;
+        printf("Total Number of Target Files: %d\n", size);
+        file_index = (int*) malloc(size * sizeof(int));
+
+        p = strtok(tmp, separators); 
+        assert (p != NULL);
+        i = 0;
+        while (p != NULL){
+            file_index[i] = atoi(p);
+            p = strtok(NULL, separators);
+            i++;
+        }
+        
+        printf("Last index: %d", file_index[size - 1]);
+        printf("\n");
+        break;
+    }
+  * num_tests =  size;
+  return file_index;
+}
+
 void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_arr, int* con_size) {
 
     FILE *fp;
@@ -187,11 +239,39 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
 int main(int argc, char** argv)
 {
 
+    printf("Parse scheduele file\n");
+    int num_tests = 0;
+    int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
+
     if (argc < 2){
         return 1;
     }
     
-    char* test_num = argv[1];
+    //OPENCL HOST CODE AREA START
+    std::vector<cl::Device> devices = xcl::get_xil_devices();
+    cl::Device device = devices[0];
+
+    cl::Context context(device);
+    cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
+    std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
+
+    //Create Program and Kernel
+    std::string binaryFile = xcl::find_binary_file(device_name, "Indel_Accel");
+    cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
+    devices.resize(1);
+    cl::Program program(context, devices, bins);
+    //cl::Kernel krnl_indel(program,"Indel_Accel");
+
+    std::vector<cl::Kernel> krnl_indels(10,  cl::Kernel(program,"Indel_Accel"));
+    cl::Kernel krnl_indel = krnl_indels[0];
+
+
+  for (int test_idx = 0; test_idx< num_tests; test_idx++) {
+    //char* test_num = argv[1];
+    char test_num[5];
+    snprintf(test_num, sizeof(test_num), "%d", test_indices[test_idx]);
+    //itoa(test_indices[test_idx], test_num, 10);
+    
     const char* file_prefix = "../indel_tests/ir_toy/";
     char con[256] = "";
     strcat(con, file_prefix);
@@ -215,8 +295,9 @@ int main(int argc, char** argv)
     char* con_arr, *reads_arr, *weights_arr; 
     int *con_len, con_size, *reads_len, reads_size; 
 
+
+    auto start = std::chrono::high_resolution_clock::now();
     // Malloc the largest array 
-  auto start = std::chrono::high_resolution_clock::now();
     con_arr = (char*) malloc( CON_SIZE * CON_LEN * sizeof(char));
     reads_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
     weights_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
@@ -225,13 +306,11 @@ int main(int argc, char** argv)
     parse( reads, 4, reads_arr, &reads_len, &reads_size);
     parse( reads, 5, weights_arr, &reads_len, &reads_size);
 
-  auto finish = std::chrono::high_resolution_clock::now();
-  //std::chrono::duration<double> elapsed = finish - start;   
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-  std::cout << "Parsing time is :" << duration.count() << " ms\n";
-  //printf("Parse time is: %0.3f ms\n", duration.count());
-
-
+    auto finish = std::chrono::high_resolution_clock::now();
+    //std::chrono::duration<double> elapsed = finish - start;   
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    std::cout << "Parsing time is :" << duration.count() << " ms\n";
+    //printf("Parse time is: %0.3f ms\n", duration.count());
 
     int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
     int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
@@ -300,21 +379,6 @@ int main(int argc, char** argv)
     //printf("Preprocess time is: %0.3f ms\n", duration.count());
 
 
-
-    //OPENCL HOST CODE AREA START
-    std::vector<cl::Device> devices = xcl::get_xil_devices();
-    cl::Device device = devices[0];
-
-    cl::Context context(device);
-    cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
-    std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
-
-    //Create Program and Kernel
-    std::string binaryFile = xcl::find_binary_file(device_name, "Indel_Accel");
-    cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
-    devices.resize(1);
-    cl::Program program(context, devices, bins);
-    cl::Kernel krnl_indel(program,"Indel_Accel");
 
     cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, whd_buffer_ptr,  new_ref_idx_ptr; 
     con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
@@ -408,8 +472,7 @@ int main(int argc, char** argv)
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
 
-    //OPENCL HOST CODE AREA END
-    
+    //OPENCL HOST CODE AREA END   
     int * whd_buffer_arr = &whd_buffer[0];
     Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
     finish = std::chrono::high_resolution_clock::now();
@@ -431,5 +494,9 @@ int main(int argc, char** argv)
 
     delete[] new_ref_idx;
     std::cout << "TEST " << (match ? "FAILED" : "PASSED") << std::endl; 
-    return (match ? EXIT_FAILURE :  EXIT_SUCCESS);
+    //if (!match)
+    //  return EXIT_FAILURE;
+    //return (match ? EXIT_FAILURE :  EXIT_SUCCESS);
+  }
+  return EXIT_SUCCESS;
 }
