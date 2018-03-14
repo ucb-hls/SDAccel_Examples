@@ -252,7 +252,7 @@ int main(int argc, char** argv)
     cl::Device device = devices[0];
 
     cl::Context context(device);
-    cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
+    cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE| | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
 
     //Create Program and Kernel
@@ -262,11 +262,13 @@ int main(int argc, char** argv)
     cl::Program program(context, devices, bins);
     //cl::Kernel krnl_indel(program,"Indel_Accel");
 
-    std::vector<cl::Kernel> krnl_indels(10,  cl::Kernel(program,"Indel_Accel"));
-    cl::Kernel krnl_indel = krnl_indels[0];
+    std::vector<cl::Kernel> krnl_indels(2,  cl::Kernel(program,"Indel_Accel"));
 
 
   for (int test_idx = 0; test_idx< num_tests; test_idx++) {
+    
+    int kernel_idx = test_idx % 2;
+    cl::Kernel krnl_indel = krnl_indels[kernel_idx];
     //char* test_num = argv[1];
     char test_num[5];
     snprintf(test_num, sizeof(test_num), "%d", test_indices[test_idx]);
@@ -432,7 +434,7 @@ int main(int argc, char** argv)
     inBufVec.push_back(reads_arr_input);
     inBufVec.push_back(weights_arr_input);
     outBufVec.push_back(whd_output);
-    //outBufVec.push_back(new_ref_idx_output);
+    outBufVec.push_back(new_ref_idx_output);
 
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
@@ -446,7 +448,7 @@ int main(int argc, char** argv)
     krnl_indel.setArg(narg++, reads_size);
     krnl_indel.setArg(narg++, reads_len_input);
     krnl_indel.setArg(narg++, weights_arr_input);
-    krnl_indel.setArg(narg++, whd_output);
+    //krnl_indel.setArg(narg++, whd_output);
 
     //krnl_indel.setArg(narg++, new_ref_idx_output);
 
