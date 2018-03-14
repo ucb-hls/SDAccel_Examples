@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <map>
 
+#include <pthread.h>
 #include <chrono>
 #include "ap_int.h"
 
@@ -40,6 +41,7 @@
 
 #define WORK_GROUP 4 
 #define WORK_ITEM_PER_GROUP 1
+#define PARALLEL_UNITS 4
 // JENNY TODO
 // Put input and output onto different memory banks 
 // https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
@@ -159,7 +161,7 @@ int* parse_schedule (const char* file, int* num_tests) {
   return file_index;
 }
 
-void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_arr, int* con_size) {
+void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_arr, int* con_size, int*total_len) {
 
     FILE *fp;
     char con[256]="";
@@ -230,7 +232,7 @@ void parse(const char* file_prefix, int col_num, char* con_arr, int** con_len_ar
     //for(int i= 0; i < arr_size; i++ ){
     //  printf("%d ", con_arr[i]);
     //}
-
+    *total_len = base;
     *con_size = num_lines;
     free(line);
     fclose(fp); 
@@ -247,12 +249,18 @@ int main(int argc, char** argv)
         return 1;
     }
     
+    const char* file_prefix = "../indel_tests/ir_toy/";
+    char test_num[5];
+    char con[256] = "";
+    char reads[256]="";
+
     //OPENCL HOST CODE AREA START
     std::vector<cl::Device> devices = xcl::get_xil_devices();
     cl::Device device = devices[0];
 
     cl::Context context(device);
-    cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE| | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+    //cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+    cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
 
     //Create Program and Kernel
@@ -262,210 +270,51 @@ int main(int argc, char** argv)
     cl::Program program(context, devices, bins);
     //cl::Kernel krnl_indel(program,"Indel_Accel");
 
-    std::vector<cl::Kernel> krnl_indels(2,  cl::Kernel(program,"Indel_Accel"));
+    std::vector<cl::Kernel> krnl_indels(1,  cl::Kernel(program,"Indel_Accel"));
 
-
-  for (int test_idx = 0; test_idx< num_tests; test_idx++) {
-    
-    int kernel_idx = test_idx % 2;
-    cl::Kernel krnl_indel = krnl_indels[kernel_idx];
-    //char* test_num = argv[1];
-    char test_num[5];
-    snprintf(test_num, sizeof(test_num), "%d", test_indices[test_idx]);
-    //itoa(test_indices[test_idx], test_num, 10);
-    
-    const char* file_prefix = "../indel_tests/ir_toy/";
-    char con[256] = "";
-    strcat(con, file_prefix);
-    strcat(con, test_num);
-    strcat(con, ".SEQ");
-
-    char reads[256]="";
-    strcat(reads, file_prefix);
-    strcat(reads, test_num);
-    strcat(reads, ".READS");
-
-    printf("TARGET %s\n", test_num);
-
+    // Mapping for ATGCU
     BasePairMap m;
     m['A'] = 0;
     m['T'] = 1;
     m['C'] = 2;
     m['G'] = 3;
     m['U'] = 4;
+ 
+  for (int test_idx = 0; test_idx< num_tests; test_idx+= PARALLEL_UNITS) {
+
+    high_resolution_clock::time_point parse_time[PARALLEL_UNITS];
+    high_resolution_clock::time_point start, finish, duration;
+    //int kernel_idx = test_idx % 2;
+    cl::Kernel krnl_indel = krnl_indels[0];
+    //char* test_num = argv[1];
+    std::vector<cl::Memory> inBufVec, outBufVec;
 
     char* con_arr, *reads_arr, *weights_arr; 
-    int *con_len, con_size, *reads_len, reads_size; 
-
-
-    auto start = std::chrono::high_resolution_clock::now();
-    // Malloc the largest array 
-    con_arr = (char*) malloc( CON_SIZE * CON_LEN * sizeof(char));
-    reads_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
-    weights_arr = (char*) malloc( READS_SIZE * READS_LEN * sizeof(char));
-
-    parse( con,1, con_arr, &con_len, &con_size);
-    parse( reads, 4, reads_arr, &reads_len, &reads_size);
-    parse( reads, 5, weights_arr, &reads_len, &reads_size);
-
-    auto finish = std::chrono::high_resolution_clock::now();
-    //std::chrono::duration<double> elapsed = finish - start;   
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-    std::cout << "Parsing time is :" << duration.count() << " ms\n";
-    //printf("Parse time is: %0.3f ms\n", duration.count());
-
-    int* min_whd = (int*) malloc(con_size * reads_size * sizeof(int));
-    int* min_whd_idx = (int*) malloc(con_size * reads_size * sizeof(int));
-    int* new_ref = (int*) malloc(reads_size * sizeof(int));
-    //int* new_ref_idx = (int*) malloc(reads_size * sizeof(int));
-    int* new_ref_idx_ref = (int*) malloc(reads_size * sizeof(int));
-
-    whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
-    score_whd (min_whd,  min_whd_idx, con_size, reads_size, new_ref, new_ref_idx_ref);
-
-    printf("Software Success!\n");
-    //return 0;
-    //Allocate Memory in Host Memory
-    //std::vector<char,aligned_allocator<char>> con_arr_buffer     ( con_arr, con_arr + CON_SIZE * CON_LEN);
-    //std::vector<char,aligned_allocator<char>> reads_arr_buffer     (reads_arr, reads_arr + READS_SIZE * READS_LEN);
-    //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
-
-    start = std::chrono::high_resolution_clock::now();
-    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer     ( CON_SIZE * CON_LEN);
-    std::vector<char,aligned_allocator<char>> con_arr_buffer     ( CON_SIZE * CON_LEN >> 1);
-    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer     ( READS_SIZE * READS_LEN);
-    std::vector<char,aligned_allocator<char>> reads_arr_buffer     ( READS_SIZE * READS_LEN >> 1);
-    std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
-
-  //  for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-  //      con_arr_buffer[i] = m[con_arr[i]];
-  //  }
-
-    for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[con_arr[i]] & 0xf;
-        con_arr_buffer[idx] = (con_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("con_arr_buffer[%d + %d]: %hhX \n", idx, offset, con_arr_buffer[idx]);
-    }
-
- //   printf("Read Buffer:");     
- //   for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
- //       reads_arr_buffer[i] = m[reads_arr[i]];
- //       //unsigned char print_var = reads_arr_buffer[i];
- //       //printf("%x", print_var);     
- //   }
-    for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[reads_arr[i]] & 0xf;
-        reads_arr_buffer[idx] = (reads_arr_buffer[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("reads_arr_buffer[%d]: %hhX \n", idx, (char)reads_arr_buffer[idx]);
-    }
-
-    std::vector<int,aligned_allocator<int>> con_len_buffer     (con_len, con_len + CON_SIZE);
-    std::vector<int,aligned_allocator<int>> reads_len_buffer     (reads_len, reads_len + READS_SIZE);
-
-    std::vector<int,aligned_allocator<int>> whd_buffer(con_size * reads_size << 1);
-    //std::vector<int,aligned_allocator<int>> new_ref_idx(reads_size);
-    int * new_ref_idx = new int [reads_size];
-
-    for(int i = 0 ; i < reads_size; i++){
-        new_ref_idx[i] = 0;
-    }
-    printf("\n");
-    finish = std::chrono::high_resolution_clock::now();
-
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-    std::cout << "Preprocess time is : " << duration.count() << " ms\n";
-    //printf("Preprocess time is: %0.3f ms\n", duration.count());
-
-
-
-    cl_mem_ext_ptr_t con_arr_buffer_ptr, reads_arr_buffer_ptr, weights_arr_buffer_ptr, con_len_buffer_ptr, reads_len_buffer_ptr, whd_buffer_ptr,  new_ref_idx_ptr; 
-    con_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    con_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK0; 
-    reads_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
-    reads_len_buffer_ptr.flags  = XCL_MEM_DDR_BANK1; 
-    weights_arr_buffer_ptr.flags  = XCL_MEM_DDR_BANK2; 
-    //new_ref_idx_ptr.flags  = XCL_MEM_DDR_BANK2; 
-    whd_buffer_ptr.flags = XCL_MEM_DDR_BANK3;
- 
-
-    // Setting input and output objects
-    con_arr_buffer_ptr.obj = con_arr_buffer.data();
-    con_len_buffer_ptr.obj = con_len_buffer.data();
-    reads_arr_buffer_ptr.obj = reads_arr_buffer.data();
-    reads_len_buffer_ptr.obj = reads_len_buffer.data();
-    weights_arr_buffer_ptr.obj = weights_arr_buffer.data();
-    whd_buffer_ptr.obj = whd_buffer.data();
-    //new_ref_idx_ptr.obj = new_ref_idx.data();
-
-    // Setting param to zero 
-    con_arr_buffer_ptr.param = 0; con_len_buffer_ptr.param = 0;
-    reads_arr_buffer_ptr.param = 0; reads_len_buffer_ptr.param = 0; 
-    weights_arr_buffer_ptr.param = 0; new_ref_idx_ptr.param = 0;
-    whd_buffer_ptr.param = 0;
-
-    //Allocate Buffer in Global Memory
-
-    std::vector<cl::Memory> inBufVec, outBufVec;
-    cl::Buffer con_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
-            CON_SIZE * CON_LEN, &con_arr_buffer_ptr);
-    cl::Buffer reads_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
-            READS_SIZE * READS_LEN, &reads_arr_buffer_ptr);
-    cl::Buffer weights_arr_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
-            READS_SIZE * READS_LEN, &weights_arr_buffer_ptr);
-
-    std::vector<cl::Memory> con_len_vec, reads_len_vec;
-    cl::Buffer con_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
-            CON_SIZE * sizeof(int), &con_len_buffer_ptr);
-    cl::Buffer reads_len_input(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
-            READS_SIZE * sizeof(int), &reads_len_buffer_ptr);
-
-    cl::Buffer whd_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY| CL_MEM_EXT_PTR_XILINX ,
-            reads_size * con_size * 2 * sizeof(int), &whd_buffer_ptr);
-    //cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY | CL_MEM_EXT_PTR_XILINX ,
-    //        READS_SIZE * sizeof(int), &new_ref_idx_ptr);
-
-    inBufVec.push_back(con_len_input);
-    inBufVec.push_back(reads_len_input);
-    inBufVec.push_back(con_arr_input);
-    inBufVec.push_back(reads_arr_input);
-    inBufVec.push_back(weights_arr_input);
-    outBufVec.push_back(whd_output);
-    outBufVec.push_back(new_ref_idx_output);
-
-    //Copy input data to device global memory
-    q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
-
-    //Set the Kernel Arguments
+    int * con_len, con_size, *reads_len, reads_size; 
+    int con_total_len, reads_total_len, weights_total_len; 
+    int * min_whd, * min_whd_idx, * new_ref, * new_ref_idx_ref;
     int narg=0;
-    krnl_indel.setArg(narg++, con_arr_input);
-    krnl_indel.setArg(narg++, con_size);
-    krnl_indel.setArg(narg++, con_len_input);
-    krnl_indel.setArg(narg++, reads_arr_input);
-    krnl_indel.setArg(narg++, reads_size);
-    krnl_indel.setArg(narg++, reads_len_input);
-    krnl_indel.setArg(narg++, weights_arr_input);
-    //krnl_indel.setArg(narg++, whd_output);
 
-    //krnl_indel.setArg(narg++, new_ref_idx_output);
+    CREATE_INPUT(0)
+    CREATE_INPUT(1)
+    CREATE_INPUT(2)
+    CREATE_INPUT(3)
 
     //Launch the Kernel
     //cl::Event event;
-
+    //-------------------
     start = std::chrono::high_resolution_clock::now(); 
-    int work_group = WORK_GROUP;
+    //int work_group = WORK_GROUP;
+    int work_group = 1;
 
     cl::Event events[work_group];
 
-    for(int i = 0; i < work_group; i++) {
-        krnl_indel.setArg(narg+0, i);
-        krnl_indel.setArg(narg+1, work_group);
 
-        q.enqueueTask(krnl_indel, NULL, &events[i]);
-    }
+    //for(int i = 0; i < work_group; i++) {
+    krnl_indel.setArg(narg+0, i);
+    krnl_indel.setArg(narg+1, work_group);
+
+    q.enqueueTask(krnl_indel, NULL, &events[0]);
 
     q.finish();
 
@@ -475,8 +324,8 @@ int main(int argc, char** argv)
     q.finish();
 
     //OPENCL HOST CODE AREA END   
-    int * whd_buffer_arr = &whd_buffer[0];
-    Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
+    //int * whd_buffer_arr = &whd_buffer[0];
+    //Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
     finish = std::chrono::high_resolution_clock::now();
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
 
@@ -485,7 +334,7 @@ int main(int argc, char** argv)
     // Compare the results of the Device to the simulation
     int match = 0;
     for (int i = 0 ; i < reads_size; i++){
-        if (new_ref_idx[i] != new_ref_idx_ref[i]){
+        if (new_ref_idx_ ## X [i] != new_ref_idx_ref[i]){
             std::cout << "Error: Result mismatch" << std::endl;
             std::cout << "i = " << i << " CPU result = " << new_ref_idx_ref[i]
                 << " Device result = " << new_ref_idx[i] << std::endl;
@@ -494,7 +343,7 @@ int main(int argc, char** argv)
         }
     }
 
-    delete[] new_ref_idx;
+    //delete[] new_ref_idx;
     std::cout << "TEST " << (match ? "FAILED" : "PASSED") << std::endl; 
     //if (!match)
     //  return EXIT_FAILURE;
