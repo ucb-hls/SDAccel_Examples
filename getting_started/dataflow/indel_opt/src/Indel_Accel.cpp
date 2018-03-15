@@ -49,7 +49,8 @@ extern "C" {
 void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
     ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx){
 #pragma HLS INLINE
-
+    
+         
     //Set buffer to 512 bit -> 128 char 
     // Tile the output with the consensus 
     ap_uint<4> con_buffer_0[128];
@@ -147,6 +148,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
             // kth element location in the con_buffer
             int con_start = 0;
 
+            printf("Local con_len: %d, reads_len: %d\n", local_consensus_length, local_reads_length);
             printf("Length Diff: %d\n", local_consensus_length - local_reads_length);
            //con_reads_diff: for (k = 0; k <= local_consensus_length - local_reads_length; k++) {
             con_reads_diff: for (k = 0; k <= local_consensus_length - local_reads_length; k+=1) {
@@ -414,6 +416,11 @@ void Indel_Accel (ap_uint<4>* consensus_0, const int consensus_size_0, int* cons
 //#pragma HLS INTERFACE s_axilite port=new_ref_idx bundle=control
  
 
+for(int i =0; i < 6;  i++)
+  printf("consensus_length_0: %d\n", consensus_length_0[i]);
+
+printf("consensus_size_0: %d\n",consensus_size_0);
+printf("reads_size_0: %d\n",reads_size_0);
 #pragma HLS expression_balance
 Indel_Accel_Krnl(consensus_0, consensus_size_0, consensus_length_0, reads_0, reads_size_0, reads_length_0, qs_0, new_ref_idx_0);
 Indel_Accel_Krnl(consensus_1, consensus_size_1, consensus_length_1, reads_1, reads_size_1, reads_length_1, qs_1, new_ref_idx_1);
