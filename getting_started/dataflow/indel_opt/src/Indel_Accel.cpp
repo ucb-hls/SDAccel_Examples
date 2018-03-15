@@ -44,9 +44,10 @@ void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, 
     }
 }
 
+extern "C" {
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
 void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, ap_uint<4>* qs, int* new_ref_idx){
+    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx){
 #pragma HLS INLINE
 
     //Set buffer to 512 bit -> 128 char 
@@ -336,7 +337,6 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
 }
 
 
-extern "C" {
 void Indel_Accel (ap_uint<4>* consensus_0, const int consensus_size_0, int* consensus_length_0, \
     ap_uint<4>* reads_0, const int reads_size_0, int* reads_length_0, char* qs_0, int* new_ref_idx_0, \
     ap_uint<4>* consensus_1, const int consensus_size_1, int* consensus_length_1, \
@@ -415,7 +415,6 @@ void Indel_Accel (ap_uint<4>* consensus_0, const int consensus_size_0, int* cons
  
 
 #pragma HLS expression_balance
-
 Indel_Accel_Krnl(consensus_0, consensus_size_0, consensus_length_0, reads_0, reads_size_0, reads_length_0, qs_0, new_ref_idx_0);
 Indel_Accel_Krnl(consensus_1, consensus_size_1, consensus_length_1, reads_1, reads_size_1, reads_length_1, qs_1, new_ref_idx_1);
 Indel_Accel_Krnl(consensus_2, consensus_size_2, consensus_length_2, reads_2, reads_size_2, reads_length_2, qs_2, new_ref_idx_2);

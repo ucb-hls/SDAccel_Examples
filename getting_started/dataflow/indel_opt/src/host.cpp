@@ -248,9 +248,9 @@ int main(int argc, char** argv)
     int num_tests = 0;
     int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
 
-    if (argc < 2){
-        return 1;
-    }
+    //if (argc < 2){
+    //    return 1;
+    //}
     
     m['A'] = 0;
     m['T'] = 1;
@@ -287,16 +287,18 @@ int main(int argc, char** argv)
     std::vector<cl::Memory> inBufVec, outBufVec;
 
     int * min_whd, * min_whd_idx, * new_ref, * new_ref_idx_ref;
-    int * new_ref_idx_ref_0;
-    int * new_ref_idx_ref_1;
-    int * new_ref_idx_ref_2;
-    int * new_ref_idx_ref_3;
-    int narg=0;
+    int * new_ref_idx_ref_0,  * new_ref_idx_0;
+    int * new_ref_idx_ref_1,  * new_ref_idx_1;
+    int * new_ref_idx_ref_2,  * new_ref_idx_2;
+    int * new_ref_idx_ref_3,  * new_ref_idx_3;
+    int narg=0,  new_ref_idx;
+    int reads_size_0, reads_size_1, reads_size_2, reads_size_3;
 
-    Run_Unit(0, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_0, parse_time, narg, num_tests, test_indices);
-    Run_Unit(1, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_1, parse_time, narg, num_tests, test_indices);
-    Run_Unit(2, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_2, parse_time, narg, num_tests, test_indices);
-    Run_Unit(3, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_3, parse_time, narg, num_tests, test_indices);
+    Run_Unit(0, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_0, new_ref_idx_0, parse_time, narg, num_tests, test_indices, reads_size_0);
+    Run_Unit(1, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_1, new_ref_idx_1, parse_time, narg, num_tests, test_indices, reads_size_1);
+    Run_Unit(2, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_2, new_ref_idx_2, parse_time, narg, num_tests, test_indices, reads_size_2);
+    Run_Unit(3, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_3, new_ref_idx_3, parse_time, narg, num_tests, test_indices, reads_size_3);
+
  
     //Launch the Kernel
     //cl::Event event;
@@ -329,11 +331,10 @@ int main(int argc, char** argv)
 
     std::cout << "OpenCl Execution time is: " << duration.count() << " ms\n";  
 
-    //Compare_Results(0);
-    //Compare_Results(1);
-    //Compare_Results(2);
-    //Compare_Results(3);
-
+    Compare_Results(0, reads_size_0, new_ref_idx_0, new_ref_idx_ref_0);
+    Compare_Results(1, reads_size_1, new_ref_idx_1, new_ref_idx_ref_1);
+    Compare_Results(2, reads_size_2, new_ref_idx_2, new_ref_idx_ref_2);
+    Compare_Results(3, reads_size_3, new_ref_idx_3, new_ref_idx_ref_3);
   }
   return EXIT_SUCCESS;
 }
