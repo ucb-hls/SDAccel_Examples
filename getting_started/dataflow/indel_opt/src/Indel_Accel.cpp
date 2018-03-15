@@ -102,7 +102,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
     }*/
     int min_whd[CON_SIZE * READS_SIZE << 1];
     //int min_whd_idx[CON_SIZE * READS_SIZE];
-    //int new_ref[READS_SIZE];
+    int new_ref[READS_SIZE];
     //int consensus_base = 0; 
     int i, j, k, l;
 
@@ -288,7 +288,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
             //min_whd_idx[i * reads_size + j] = min_idx;
 
             min_whd[(i * reads_size + j) << 1] = min;
-            min_whd[(i * reads_size + j << 1) + 1] = min_idx;
+            min_whd[((i * reads_size + j) << 1) + 1] = min_idx;
  
  
             //reads_base += local_reads_length;
@@ -318,8 +318,8 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
             //new_ref[j] = min_whd[min_idx][j];
             //new_ref_idx[j] = min_whd_idx[min_idx][j];
-            new_ref[j] = min_whd[min_idx * reads_size + j];
-            new_ref_idx[j] = min_whd_idx[ min_idx * reads_size +j];
+            new_ref[j] = min_whd[(min_idx * reads_size + j) << 1];
+            new_ref_idx[j] = min_whd[ ((min_idx * reads_size +j) << 1) + 1 ];
  
         //} else{
         //    new_ref[j] = min_whd [j];
@@ -337,26 +337,23 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
 
 
 extern "C" {
-void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* min_whd, \
-                
+void Indel_Accel (ap_uint<4>* consensus_0, const int consensus_size_0, int* consensus_length_0, \
+    ap_uint<4>* reads_0, const int reads_size_0, int* reads_length_0, char* qs_0, int* new_ref_idx_0, \
     ap_uint<4>* consensus_1, const int consensus_size_1, int* consensus_length_1, \
-    ap_uint<4>* reads_1, const int reads_size_1, int* reads_length_1, char* qs_1, int* min_whd_1, \ 
-
+    ap_uint<4>* reads_1, const int reads_size_1, int* reads_length_1, char* qs_1, int* new_ref_idx_1, \
     ap_uint<4>* consensus_2, const int consensus_size_2, int* consensus_length_2, \
-    ap_uint<4>* reads_2, const int reads_size_2, int* reads_length_2, char* qs_2, int* min_whd_2, \ 
-
+    ap_uint<4>* reads_2, const int reads_size_2, int* reads_length_2, char* qs_2, int* new_ref_idx_2, \ 
     ap_uint<4>* consensus_3, const int consensus_size_3, int* consensus_length_3, \
-    ap_uint<4>* reads_3, const int reads_size_3, int* reads_length_3, char* qs_3, int* min_whd_3, int global_id, int global_threads) {
+    ap_uint<4>* reads_3, const int reads_size_3, int* reads_length_3, char* qs_3, int* new_ref_idx_3, int global_id, int global_threads) {
  
  
-    //ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* min_whd, int* new_ref_idx, int global_id, int global_threads) {
+    //ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int* new_ref_idx, int global_id, int global_threads) {
 #pragma HLS INTERFACE m_axi port=consensus_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_length_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=qs_0 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=min_whd_0 offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=new_ref_idx_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE s_axilite port=consensus_0 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_size_0 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_length_0 bundle=control
@@ -364,14 +361,14 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS INTERFACE s_axilite port=reads_size_0 bundle=control
 #pragma HLS INTERFACE s_axilite port=reads_length_0 bundle=control
 #pragma HLS INTERFACE s_axilite port=qs_0 bundle=control
-#pragma HLS INTERFACE s_axilite port=min_whd_0 bundle=control
+#pragma HLS INTERFACE s_axilite port=new_ref_idx_0 bundle=control
 
 #pragma HLS INTERFACE m_axi port=consensus_1 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length_1 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_1 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_length_1 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=qs_1 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=min_whd_1 offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=new_ref_idx_1 offset=slave bundle=gmem0
 #pragma HLS INTERFACE s_axilite port=consensus_1 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_size_1 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_length_1 bundle=control
@@ -379,14 +376,14 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS INTERFACE s_axilite port=reads_size_1 bundle=control
 #pragma HLS INTERFACE s_axilite port=reads_length_1 bundle=control
 #pragma HLS INTERFACE s_axilite port=qs_1 bundle=control
-#pragma HLS INTERFACE s_axilite port=min_whd_1 bundle=control
+#pragma HLS INTERFACE s_axilite port=new_ref_idx_1 bundle=control
 
 #pragma HLS INTERFACE m_axi port=consensus_2 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length_2 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_2 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_length_2 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=qs_2 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=min_whd_2 offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=new_ref_idx_2 offset=slave bundle=gmem0
 #pragma HLS INTERFACE s_axilite port=consensus_2 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_size_2 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_length_2 bundle=control
@@ -394,14 +391,14 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS INTERFACE s_axilite port=reads_size_2 bundle=control
 #pragma HLS INTERFACE s_axilite port=reads_length_2 bundle=control
 #pragma HLS INTERFACE s_axilite port=qs_2 bundle=control
-#pragma HLS INTERFACE s_axilite port=min_whd_2 bundle=control
+#pragma HLS INTERFACE s_axilite port=new_ref_idx_2 bundle=control
 
 #pragma HLS INTERFACE m_axi port=consensus_3 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length_3 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_3 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_length_3 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=qs_3 offset=slave bundle=gmem0
-#pragma HLS INTERFACE m_axi port=min_whd_3 offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=new_ref_idx_3 offset=slave bundle=gmem0
 #pragma HLS INTERFACE s_axilite port=consensus_3 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_size_3 bundle=control
 #pragma HLS INTERFACE s_axilite port=consensus_length_3 bundle=control
@@ -409,7 +406,7 @@ void Indel_Accel (ap_uint<4>* consensus, const int consensus_size, int* consensu
 #pragma HLS INTERFACE s_axilite port=reads_size_3 bundle=control
 #pragma HLS INTERFACE s_axilite port=reads_length_3 bundle=control
 #pragma HLS INTERFACE s_axilite port=qs_3 bundle=control
-#pragma HLS INTERFACE s_axilite port=min_whd_3 bundle=control
+#pragma HLS INTERFACE s_axilite port=new_ref_idx_3 bundle=control
 #pragma HLS INTERFACE s_axilite port=global_id bundle=control
 #pragma HLS INTERFACE s_axilite port=global_threads bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
@@ -430,7 +427,8 @@ Indel_Accel_Krnl(consensus_3, consensus_size_3, consensus_length_3, reads_3, rea
 //const int reads_size;
 //int* reads_length;
 //char* qs;
-//int* min_whd;
+//int* new_ref_idx;
 
 
+}
 }

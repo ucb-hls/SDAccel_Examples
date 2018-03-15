@@ -48,6 +48,9 @@
 //
 //typedef std::map<char, ap_uint<4>> BasePairMap;
 typedef std::map<char, char> BasePairMap;
+BasePairMap m;
+
+#include "Indel_Accel_Host.cpp"
 
 void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, int* __restrict new_ref_idx) {
     int new_ref[READS_SIZE];
@@ -249,11 +252,12 @@ int main(int argc, char** argv)
         return 1;
     }
     
-    const char* file_prefix = "../indel_tests/ir_toy/";
-    char test_num[5];
-    char con[256] = "";
-    char reads[256]="";
-
+    m['A'] = 0;
+    m['T'] = 1;
+    m['C'] = 2;
+    m['G'] = 3;
+    m['U'] = 4;
+ 
     //OPENCL HOST CODE AREA START
     std::vector<cl::Device> devices = xcl::get_xil_devices();
     cl::Device device = devices[0];
@@ -271,35 +275,29 @@ int main(int argc, char** argv)
     //cl::Kernel krnl_indel(program,"Indel_Accel");
 
     std::vector<cl::Kernel> krnl_indels(1,  cl::Kernel(program,"Indel_Accel"));
+    std::chrono::high_resolution_clock::time_point start, finish;
+    std::chrono::milliseconds duration;
 
-    // Mapping for ATGCU
-    BasePairMap m;
-    m['A'] = 0;
-    m['T'] = 1;
-    m['C'] = 2;
-    m['G'] = 3;
-    m['U'] = 4;
- 
   for (int test_idx = 0; test_idx< num_tests; test_idx+= PARALLEL_UNITS) {
 
-    high_resolution_clock::time_point parse_time[PARALLEL_UNITS];
-    high_resolution_clock::time_point start, finish, duration;
+    std::chrono::milliseconds parse_time[PARALLEL_UNITS];
     //int kernel_idx = test_idx % 2;
     cl::Kernel krnl_indel = krnl_indels[0];
     //char* test_num = argv[1];
     std::vector<cl::Memory> inBufVec, outBufVec;
 
-    char* con_arr, *reads_arr, *weights_arr; 
-    int * con_len, con_size, *reads_len, reads_size; 
-    int con_total_len, reads_total_len, weights_total_len; 
     int * min_whd, * min_whd_idx, * new_ref, * new_ref_idx_ref;
+    int * new_ref_idx_ref_0;
+    int * new_ref_idx_ref_1;
+    int * new_ref_idx_ref_2;
+    int * new_ref_idx_ref_3;
     int narg=0;
 
-    CREATE_INPUT(0)
-    CREATE_INPUT(1)
-    CREATE_INPUT(2)
-    CREATE_INPUT(3)
-
+    Run_Unit(0, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_0, parse_time, narg, num_tests, test_indices);
+    Run_Unit(1, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_1, parse_time, narg, num_tests, test_indices);
+    Run_Unit(2, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_2, parse_time, narg, num_tests, test_indices);
+    Run_Unit(3, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_3, parse_time, narg, num_tests, test_indices);
+ 
     //Launch the Kernel
     //cl::Event event;
     //-------------------
@@ -309,8 +307,8 @@ int main(int argc, char** argv)
 
     cl::Event events[work_group];
 
-
     //for(int i = 0; i < work_group; i++) {
+    int i = 0; 
     krnl_indel.setArg(narg+0, i);
     krnl_indel.setArg(narg+1, work_group);
 
@@ -331,23 +329,11 @@ int main(int argc, char** argv)
 
     std::cout << "OpenCl Execution time is: " << duration.count() << " ms\n";  
 
-    // Compare the results of the Device to the simulation
-    int match = 0;
-    for (int i = 0 ; i < reads_size; i++){
-        if (new_ref_idx_ ## X [i] != new_ref_idx_ref[i]){
-            std::cout << "Error: Result mismatch" << std::endl;
-            std::cout << "i = " << i << " CPU result = " << new_ref_idx_ref[i]
-                << " Device result = " << new_ref_idx[i] << std::endl;
-            match = 1;
-            break;
-        }
-    }
+    //Compare_Results(0);
+    //Compare_Results(1);
+    //Compare_Results(2);
+    //Compare_Results(3);
 
-    //delete[] new_ref_idx;
-    std::cout << "TEST " << (match ? "FAILED" : "PASSED") << std::endl; 
-    //if (!match)
-    //  return EXIT_FAILURE;
-    //return (match ? EXIT_FAILURE :  EXIT_SUCCESS);
   }
   return EXIT_SUCCESS;
 }
