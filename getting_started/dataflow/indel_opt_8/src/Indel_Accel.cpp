@@ -308,7 +308,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
     score: for (i = 1; i < consensus_size; i++) {
         int score = 0;
         for (j = 0; j < reads_size; j++) {
-            int tmp = min_whd[i * reads_size + j] - min_whd[j];
+            int tmp = min_whd[(i * reads_size + j) << 1] - min_whd[j << 1];
             score += (tmp > 0) ? tmp: -tmp;
         }
         min_idx = (score < min_score) ? i : min_idx;

@@ -42,7 +42,7 @@
 #define WORK_GROUP 4 
 #define WORK_ITEM_PER_GROUP 1
 #define PARALLEL_UNITS 4
-#define NUM_KERNELS 8
+#define NUM_KERNELS 4
 // JENNY TODO
 // Put input and output onto different memory banks 
 // https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
@@ -959,7 +959,7 @@ int main(int argc, char** argv)
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
-    //q.finish();
+    q.finish();
  
     //Launch the Kernel
     //cl::Event event;
@@ -976,12 +976,12 @@ int main(int argc, char** argv)
     krnl_indel.setArg(narg+1, work_group);
 
     q.enqueueTask(krnl_indel, NULL, &events[0]);
-    //q.finish();
+    q.finish();
 
     //event.wait();
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
-
+    q.finish();
     //OPENCL HOST CODE AREA END   
     //int * whd_buffer_arr = &whd_buffer[0];
     //Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
@@ -1022,16 +1022,16 @@ int main(int argc, char** argv)
     }
 
 
- 
+    
    // Compare_Results(0, reads_size_0, new_ref_idx_0, new_ref_idx_ref_0);
    // Compare_Results(1, reads_size_1, new_ref_idx_1, new_ref_idx_ref_1);
    // Compare_Results(2, reads_size_2, new_ref_idx_2, new_ref_idx_ref_2);
    // Compare_Results(3, reads_size_3, new_ref_idx_3, new_ref_idx_ref_3);
   }
 
-  for(int i; i < NUM_KERNELS; i ++) {
-    qs[i].finish();
-  }
+  //for(int i; i < NUM_KERNELS; i ++) {
+  //  qs[i].finish();
+  //}
   for (int test_idx = 0; test_idx< num_tests; test_idx++) {
       Compare_Results(test_idx, reads_size_arr[test_idx], *(new_ref_idx_arr[test_idx]) , new_ref_idx_ref_arr[test_idx]);
   }
