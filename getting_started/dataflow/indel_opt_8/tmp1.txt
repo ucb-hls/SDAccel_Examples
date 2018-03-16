@@ -1,0 +1,7 @@
+   if (test_idx_X < num_tests){ 
+      reads_size_arr[test_idx_X] = reads_size_X;
+      new_ref_idx_arr[test_idx_X] = new_ref_idx_X;
+      new_ref_idx_ref_arr[test_idx_X] = new_ref_idx_ref_X;
+    }
+
+
