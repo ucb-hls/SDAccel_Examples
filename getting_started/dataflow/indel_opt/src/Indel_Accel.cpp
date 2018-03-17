@@ -308,7 +308,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
     score: for (i = 1; i < consensus_size; i++) {
         int score = 0;
         for (j = 0; j < reads_size; j++) {
-            int tmp = min_whd[i * reads_size + j] - min_whd[j];
+            int tmp = min_whd[(i * reads_size + j) << 1] - min_whd[j << 1];
             score += (tmp > 0) ? tmp: -tmp;
         }
         min_idx = (score < min_score) ? i : min_idx;
@@ -416,11 +416,11 @@ void Indel_Accel (ap_uint<4>* consensus_0, const int consensus_size_0, int* cons
 //#pragma HLS INTERFACE s_axilite port=new_ref_idx bundle=control
  
 
-for(int i =0; i < 6;  i++)
-  printf("consensus_length_0: %d\n", consensus_length_0[i]);
+//for(int i =0; i < consensus_size_0;  i++)
+  //printf("consensus_length_0: %d\n", consensus_length_0[i]);
 
-printf("consensus_size_0: %d\n",consensus_size_0);
-printf("reads_size_0: %d\n",reads_size_0);
+//printf("consensus_size_0: %d\n",consensus_size_0);
+//printf("reads_size_0: %d\n",reads_size_0);
 #pragma HLS expression_balance
 Indel_Accel_Krnl(consensus_0, consensus_size_0, consensus_length_0, reads_0, reads_size_0, reads_length_0, qs_0, new_ref_idx_0);
 Indel_Accel_Krnl(consensus_1, consensus_size_1, consensus_length_1, reads_1, reads_size_1, reads_length_1, qs_1, new_ref_idx_1);

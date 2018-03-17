@@ -61,18 +61,18 @@
 
     start = std::chrono::high_resolution_clock::now();
     std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_X     ( CON_SIZE * CON_LEN >> 1);
-    //std::vector<char,aligned_allocator<char>> con_arr_buffer_X      ( con_size * con_total_len >> 1);
+    //std::vector<char,aligned_allocator<char>> con_arr_buffer_X      ( con_total_len >> 1);
     std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_X     ( READS_SIZE * READS_LEN >> 1);
-    //std::vector<char,aligned_allocator<char>> reads_arr_buffer_X    ( reads_size_X * reads_total_len >> 1);
+    //std::vector<char,aligned_allocator<char>> reads_arr_buffer_X    ( reads_total_len >> 1);
     std::vector<char,aligned_allocator<char>> weights_arr_buffer_X  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
-    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_X  (weights_arr, weights_arr + reads_size_X* reads_total_len);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_X  (weights_arr, weights_arr + reads_total_len);
 
   //  for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
   //      con_arr_buffer[i] = m[con_arr[i]];
   //  }
 
     //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-    for(int i = 0 ; i < con_size*con_total_len; i++){
+    for(int i = 0 ; i < con_total_len; i++){
         int idx = i >> 1;
         int offset = (i % 2) << 2;
         char c = m[con_arr[i]] & 0xf;
@@ -86,7 +86,7 @@
  //       //unsigned char print_var = reads_arr_buffer[i];
  //       //printf("%x", print_var);     
  //   }
-    for(int i = 0 ; i < reads_size_X*reads_total_len; i++){
+    for(int i = 0 ; i < reads_total_len; i++){
         int idx = i >> 1;
         int offset = (i % 2) << 2;
         char c = m[reads_arr[i]] & 0xf;
@@ -126,12 +126,13 @@
 
 
     cl_mem_ext_ptr_t con_arr_buffer_ptr_X, reads_arr_buffer_ptr_X, weights_arr_buffer_ptr_X, con_len_buffer_ptr_X, reads_len_buffer_ptr_X, whd_buffer_ptr_X,  new_ref_idx_ptr_X; 
-    con_arr_buffer_ptr_X.flags  = XCL_MEM_DDR_BANK0; 
-    con_len_buffer_ptr_X.flags  = XCL_MEM_DDR_BANK0; 
-    reads_arr_buffer_ptr_X.flags  = XCL_MEM_DDR_BANK0; 
-    reads_len_buffer_ptr_X.flags  = XCL_MEM_DDR_BANK0; 
-    weights_arr_buffer_ptr_X.flags  = XCL_MEM_DDR_BANK0; 
-    new_ref_idx_ptr_X.flags  = XCL_MEM_DDR_BANK0; 
+    ddr_bank = banks[kernel_idx % 4];
+    con_arr_buffer_ptr_X.flags  = ddr_bank; 
+    con_len_buffer_ptr_X.flags  = ddr_bank; 
+    reads_arr_buffer_ptr_X.flags  = ddr_bank; 
+    reads_len_buffer_ptr_X.flags  = ddr_bank; 
+    weights_arr_buffer_ptr_X.flags  = ddr_bank; 
+    new_ref_idx_ptr_X.flags  = ddr_bank; 
     //whd_buffer_ptr_X.flags = XCL_MEM_DDR_BANK3;
  
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
