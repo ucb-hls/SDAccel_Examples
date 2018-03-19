@@ -58,7 +58,7 @@ void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, 
 
     int min_score = 0x7fffffff;
     int min_idx = consensus_size + 1;
-    //int i, j;
+    int i, j;
     score: for (i = 1; i < consensus_size; i++) {
         int score = 0;
         for (j = 0; j < reads_size; j++) {
