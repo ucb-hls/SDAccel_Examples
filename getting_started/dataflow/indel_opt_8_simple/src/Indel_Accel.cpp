@@ -46,8 +46,8 @@ void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, 
 
 extern "C" {
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
-void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx){
+void Indel_Accel_Krnl (ap_uint<8>* consensus, const int consensus_size, int* consensus_length, \
+    ap_uint<8>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx){
 #pragma HLS INLINE
      int min_whd[CON_SIZE * READS_SIZE];
     int min_whd_idx[CON_SIZE * READS_SIZE];
@@ -135,17 +135,17 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
 }
 
 
-void Indel_Accel (ap_uint<4>* consensus_0, const int consensus_size_0, int* consensus_length_0, \
-    ap_uint<4>* reads_0, const int reads_size_0, int* reads_length_0, char* qs_0, int* new_ref_idx_0, \
-    ap_uint<4>* consensus_1, const int consensus_size_1, int* consensus_length_1, \
-    ap_uint<4>* reads_1, const int reads_size_1, int* reads_length_1, char* qs_1, int* new_ref_idx_1, \
-    ap_uint<4>* consensus_2, const int consensus_size_2, int* consensus_length_2, \
-    ap_uint<4>* reads_2, const int reads_size_2, int* reads_length_2, char* qs_2, int* new_ref_idx_2, \ 
-    ap_uint<4>* consensus_3, const int consensus_size_3, int* consensus_length_3, \
-    ap_uint<4>* reads_3, const int reads_size_3, int* reads_length_3, char* qs_3, int* new_ref_idx_3, int global_id, int global_threads) {
+void Indel_Accel (ap_uint<8>* consensus_0, const int consensus_size_0, int* consensus_length_0, \
+    ap_uint<8>* reads_0, const int reads_size_0, int* reads_length_0, char* qs_0, int* new_ref_idx_0, \
+    ap_uint<8>* consensus_1, const int consensus_size_1, int* consensus_length_1, \
+    ap_uint<8>* reads_1, const int reads_size_1, int* reads_length_1, char* qs_1, int* new_ref_idx_1, \
+    ap_uint<8>* consensus_2, const int consensus_size_2, int* consensus_length_2, \
+    ap_uint<8>* reads_2, const int reads_size_2, int* reads_length_2, char* qs_2, int* new_ref_idx_2, \ 
+    ap_uint<8>* consensus_3, const int consensus_size_3, int* consensus_length_3, \
+    ap_uint<8>* reads_3, const int reads_size_3, int* reads_length_3, char* qs_3, int* new_ref_idx_3, int global_id, int global_threads) {
  
  
-    //ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int* new_ref_idx, int global_id, int global_threads) {
+    //ap_uint<8>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int* new_ref_idx, int global_id, int global_threads) {
 #pragma HLS INTERFACE m_axi port=consensus_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length_0 offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_0 offset=slave bundle=gmem0
@@ -218,10 +218,10 @@ Indel_Accel_Krnl(consensus_0, consensus_size_0, consensus_length_0, reads_0, rea
 Indel_Accel_Krnl(consensus_1, consensus_size_1, consensus_length_1, reads_1, reads_size_1, reads_length_1, qs_1, new_ref_idx_1);
 Indel_Accel_Krnl(consensus_2, consensus_size_2, consensus_length_2, reads_2, reads_size_2, reads_length_2, qs_2, new_ref_idx_2);
 Indel_Accel_Krnl(consensus_3, consensus_size_3, consensus_length_3, reads_3, reads_size_3, reads_length_3, qs_3, new_ref_idx_3);
-//ap_uint<4>* consensus;
+//ap_uint<8>* consensus;
 //const int consensus_size;
 //int* consensus_length;
-//ap_uint<4>* reads;
+//ap_uint<8>* reads;
 //const int reads_size;
 //int* reads_length;
 //char* qs;

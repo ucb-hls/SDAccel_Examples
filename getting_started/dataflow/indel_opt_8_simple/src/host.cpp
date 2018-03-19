@@ -42,12 +42,12 @@
 #define WORK_GROUP 4 
 #define WORK_ITEM_PER_GROUP 1
 #define PARALLEL_UNITS 4
-#define NUM_KERNELS 1
+#define NUM_KERNELS 8
 // JENNY TODO
 // Put input and output onto different memory banks 
 // https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
 //
-//typedef std::map<char, ap_uint<4>> BasePairMap;
+//typedef std::map<char, ap_uint<8>> BasePairMap;
 typedef std::map<char, char> BasePairMap;
 BasePairMap m;
 
@@ -101,8 +101,9 @@ int main(int argc, char** argv)
     m['G'] = 3;
     m['U'] = 4;
  
-    unsigned banks[4] = {XCL_MEM_DDR_BANK0, XCL_MEM_DDR_BANK1, XCL_MEM_DDR_BANK2, XCL_MEM_DDR_BANK3};
-    unsigned ddr_bank = banks[0];
+    //unsigned banks[4] = {XCL_MEM_DDR_BANK0, XCL_MEM_DDR_BANK1, XCL_MEM_DDR_BANK2, XCL_MEM_DDR_BANK3};
+    //unsigned ddr_bank = XCL_MEM_DDR_BANK0 | XCL_MEM_DDR_BANK1 | XCL_MEM_DDR_BANK2 | XCL_MEM_DDR_BANK3;
+    unsigned ddr_bank = XCL_MEM_DDR_BANK0;
 
     //OPENCL HOST CODE AREA START
     std::vector<cl::Device> devices = xcl::get_xil_devices();
@@ -122,7 +123,11 @@ int main(int argc, char** argv)
     cl::Program program(context, devices, bins);
     //cl::Kernel krnl_indel(program,"Indel_Accel");
 
-    std::vector<cl::Kernel> krnl_indels(NUM_KERNELS,  cl::Kernel(program,"Indel_Accel"));
+    std::vector<cl::Kernel> krnl_indels;
+    krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
+    //krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
+    //krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
+    //krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
     std::chrono::high_resolution_clock::time_point start, finish;
     std::chrono::milliseconds duration;
 
@@ -132,13 +137,14 @@ int main(int argc, char** argv)
     std::vector<std::vector<int,aligned_allocator<int>> *> new_ref_idx_arr(num_tests);
 
   for (int test_idx = 0; test_idx< num_tests; test_idx+= PARALLEL_UNITS) {
-    int kernel_idx = (test_idx / 4) % NUM_KERNELS; 
+    int kernel_idx = ((test_idx / 4)) % NUM_KERNELS; 
 
     std::chrono::milliseconds parse_time[PARALLEL_UNITS];
     //int kernel_idx = test_idx % 2;
-    cl::Kernel & krnl_indel = krnl_indels[kernel_idx];
+    cl::Kernel  krnl_indel = krnl_indels[0];
+    //cl::Kernel &  krnl_indel = krnl_indels[kernel_idx];
     cl::CommandQueue & q = qs[kernel_idx];
-    //char* test_num = argv[1];
+    //char* test_num = arg;
     std::vector<cl::Memory> inBufVec, outBufVec;
 
     int * new_ref_idx_ref_0;
@@ -149,7 +155,7 @@ int main(int argc, char** argv)
     //int * new_ref_idx_1;    
     //int * new_ref_idx_2;
     //int * new_ref_idx_3;
-            int narg=0;
+    int narg=0;
     int reads_size_0, reads_size_1, reads_size_2, reads_size_3;
 
     const char* file_prefix = "../indel_tests/ir_toy/";
@@ -170,7 +176,8 @@ int main(int argc, char** argv)
     //Run_Unit(2, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_2, new_ref_idx_2, parse_time, narg, num_tests, test_indices, reads_size_2);
     //Run_Unit(3, test_idx, context, q, krnl_indel, inBufVec, outBufVec, new_ref_idx_ref_3, new_ref_idx_3, parse_time, narg, num_tests, test_indices, reads_size_3);
 
-   //INST_0============================================//
+
+//INST_0============================================//
     int test_idx_0= test_idx + 0;
 
     printf("test_idx_0: %d\n", test_idx_0);
@@ -233,44 +240,55 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     start = std::chrono::high_resolution_clock::now();
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_0     ( CON_SIZE * CON_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_0     ( CON_SIZE * CON_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_0     ( CON_SIZE * CON_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> con_arr_buffer_0      ( con_total_len >> 1);
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_0     ( READS_SIZE * READS_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_0     ( READS_SIZE * READS_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_0     ( READS_SIZE * READS_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer_0    ( reads_total_len >> 1);
-    std::vector<char,aligned_allocator<char>> weights_arr_buffer_0  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+    std::vector<char,aligned_allocator<char>> weights_arr_buffer_0 (READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_0  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer_0  (weights_arr, weights_arr + reads_total_len);
 
-  //  for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-  //      con_arr_buffer[i] = m[con_arr[i]];
-  //  }
+    for(int i = 0 ; i < con_total_len; i++){
+    //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+        con_arr_buffer_0[i] = m[con_arr[i]];
+    }
 
     //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-    for(int i = 0 ; i < con_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[con_arr[i]] & 0xf;
-        con_arr_buffer_0[idx] = (con_arr_buffer_0[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("con_arr_buffer_0[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_0[idx]);
-    }
+   // for(int i = 0 ; i < con_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[con_arr[i]] & 0xf;
+   //     con_arr_buffer_0[idx] = (con_arr_buffer_0[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("con_arr_buffer_0[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_0[idx]);
+   // }
 
- //   printf("Read Buffer:");     
- //   for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
- //       reads_arr_buffer[i] = m[reads_arr[i]];
- //       //unsigned char print_var = reads_arr_buffer[i];
- //       //printf("%x", print_var);     
- //   }
+    printf("Read Buffer:");     
     for(int i = 0 ; i < reads_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[reads_arr[i]] & 0xf;
-        reads_arr_buffer_0[idx] = (reads_arr_buffer_0[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("reads_arr_buffer_0[%d]: %hhX \n", idx, (char)reads_arr_buffer_0[idx]);
+    //for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
+        reads_arr_buffer_0[i] = m[reads_arr[i]];
+        weights_arr_buffer_0[i] = weights_arr[i];
+        //unsigned char print_var = reads_arr_buffer[i];
+        //printf("%x", print_var);     
     }
+   // for(int i = 0 ; i < reads_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[reads_arr[i]] & 0xf;
+   //     reads_arr_buffer_0[idx] = (reads_arr_buffer_0[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("reads_arr_buffer_0[%d]: %hhX \n", idx, (char)reads_arr_buffer_0[idx]);
+   // }
 
     //std::vector<int,aligned_allocator<int>> con_len_buffer_0     (con_len, con_len + con_size);
-    std::vector<int,aligned_allocator<int>> con_len_buffer_0     (con_len, con_len + CON_SIZE);
+    //std::vector<int,aligned_allocator<int>> con_len_buffer_0     (con_len, con_len + CON_SIZE);
+    std::vector<int,aligned_allocator<int>> con_len_buffer_0     (CON_SIZE);
+    
+    for(int i = 0 ; i < con_size; i++){con_len_buffer_0[i] = con_len[i];}
     //std::vector<int,aligned_allocator<int>> reads_len_buffer_0     (reads_len, reads_len + reads_size_0);
-    std::vector<int,aligned_allocator<int>> reads_len_buffer_0     (reads_len, reads_len + READS_SIZE);
+    //std::vector<int,aligned_allocator<int>> reads_len_buffer_0     (reads_len, reads_len + READS_SIZE);
+    std::vector<int,aligned_allocator<int>> reads_len_buffer_0     (READS_SIZE);
+    for(int i = 0 ; i < reads_size_0; i++){reads_len_buffer_0[i] = reads_len[i];}
 
     printf("narg: %d\n", narg);
     printf("reads_size_0: %d\n", reads_size_0);
@@ -299,14 +317,14 @@ int main(int argc, char** argv)
 
 
     cl_mem_ext_ptr_t con_arr_buffer_ptr_0, reads_arr_buffer_ptr_0, weights_arr_buffer_ptr_0, con_len_buffer_ptr_0, reads_len_buffer_ptr_0, whd_buffer_ptr_0,  new_ref_idx_ptr_0; 
-    ddr_bank = banks[kernel_idx % 4];
+    //ddr_bank = banks[kernel_idx % 4];
     con_arr_buffer_ptr_0.flags  = ddr_bank; 
     con_len_buffer_ptr_0.flags  = ddr_bank; 
     reads_arr_buffer_ptr_0.flags  = ddr_bank; 
     reads_len_buffer_ptr_0.flags  = ddr_bank; 
     weights_arr_buffer_ptr_0.flags  = ddr_bank; 
     new_ref_idx_ptr_0.flags  = ddr_bank; 
-    //whd_buffer_ptr_0.flags = XCL_MEM_DDR_BANK3;
+    //whd_buffer_ptr_0.flags = ddr_bank;
  
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
 
@@ -431,44 +449,55 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     start = std::chrono::high_resolution_clock::now();
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_1     ( CON_SIZE * CON_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_1     ( CON_SIZE * CON_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_1     ( CON_SIZE * CON_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> con_arr_buffer_1      ( con_total_len >> 1);
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_1     ( READS_SIZE * READS_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_1     ( READS_SIZE * READS_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_1     ( READS_SIZE * READS_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer_1    ( reads_total_len >> 1);
-    std::vector<char,aligned_allocator<char>> weights_arr_buffer_1  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+    std::vector<char,aligned_allocator<char>> weights_arr_buffer_1 (READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_1  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer_1  (weights_arr, weights_arr + reads_total_len);
 
-  //  for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-  //      con_arr_buffer[i] = m[con_arr[i]];
-  //  }
+    for(int i = 0 ; i < con_total_len; i++){
+    //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+        con_arr_buffer_1[i] = m[con_arr[i]];
+    }
 
     //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-    for(int i = 0 ; i < con_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[con_arr[i]] & 0xf;
-        con_arr_buffer_1[idx] = (con_arr_buffer_1[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("con_arr_buffer_1[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_1[idx]);
-    }
+   // for(int i = 0 ; i < con_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[con_arr[i]] & 0xf;
+   //     con_arr_buffer_1[idx] = (con_arr_buffer_1[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("con_arr_buffer_1[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_1[idx]);
+   // }
 
- //   printf("Read Buffer:");     
- //   for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
- //       reads_arr_buffer[i] = m[reads_arr[i]];
- //       //unsigned char print_var = reads_arr_buffer[i];
- //       //printf("%x", print_var);     
- //   }
+    printf("Read Buffer:");     
     for(int i = 0 ; i < reads_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[reads_arr[i]] & 0xf;
-        reads_arr_buffer_1[idx] = (reads_arr_buffer_1[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("reads_arr_buffer_1[%d]: %hhX \n", idx, (char)reads_arr_buffer_1[idx]);
+    //for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
+        reads_arr_buffer_1[i] = m[reads_arr[i]];
+        weights_arr_buffer_1[i] = weights_arr[i];
+        //unsigned char print_var = reads_arr_buffer[i];
+        //printf("%x", print_var);     
     }
+   // for(int i = 0 ; i < reads_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[reads_arr[i]] & 0xf;
+   //     reads_arr_buffer_1[idx] = (reads_arr_buffer_1[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("reads_arr_buffer_1[%d]: %hhX \n", idx, (char)reads_arr_buffer_1[idx]);
+   // }
 
     //std::vector<int,aligned_allocator<int>> con_len_buffer_1     (con_len, con_len + con_size);
-    std::vector<int,aligned_allocator<int>> con_len_buffer_1     (con_len, con_len + CON_SIZE);
+    //std::vector<int,aligned_allocator<int>> con_len_buffer_1     (con_len, con_len + CON_SIZE);
+    std::vector<int,aligned_allocator<int>> con_len_buffer_1     (CON_SIZE);
+    
+    for(int i = 0 ; i < con_size; i++){con_len_buffer_1[i] = con_len[i];}
     //std::vector<int,aligned_allocator<int>> reads_len_buffer_1     (reads_len, reads_len + reads_size_1);
-    std::vector<int,aligned_allocator<int>> reads_len_buffer_1     (reads_len, reads_len + READS_SIZE);
+    //std::vector<int,aligned_allocator<int>> reads_len_buffer_1     (reads_len, reads_len + READS_SIZE);
+    std::vector<int,aligned_allocator<int>> reads_len_buffer_1     (READS_SIZE);
+    for(int i = 0 ; i < reads_size_1; i++){reads_len_buffer_1[i] = reads_len[i];}
 
     printf("narg: %d\n", narg);
     printf("reads_size_1: %d\n", reads_size_1);
@@ -497,14 +526,14 @@ int main(int argc, char** argv)
 
 
     cl_mem_ext_ptr_t con_arr_buffer_ptr_1, reads_arr_buffer_ptr_1, weights_arr_buffer_ptr_1, con_len_buffer_ptr_1, reads_len_buffer_ptr_1, whd_buffer_ptr_1,  new_ref_idx_ptr_1; 
-    ddr_bank = banks[kernel_idx % 4];
+    //ddr_bank = banks[kernel_idx % 4];
     con_arr_buffer_ptr_1.flags  = ddr_bank; 
     con_len_buffer_ptr_1.flags  = ddr_bank; 
     reads_arr_buffer_ptr_1.flags  = ddr_bank; 
     reads_len_buffer_ptr_1.flags  = ddr_bank; 
     weights_arr_buffer_ptr_1.flags  = ddr_bank; 
     new_ref_idx_ptr_1.flags  = ddr_bank; 
-    //whd_buffer_ptr_1.flags = XCL_MEM_DDR_BANK3;
+    //whd_buffer_ptr_1.flags = ddr_bank;
  
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
 
@@ -629,44 +658,55 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     start = std::chrono::high_resolution_clock::now();
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_2     ( CON_SIZE * CON_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_2     ( CON_SIZE * CON_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_2     ( CON_SIZE * CON_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> con_arr_buffer_2      ( con_total_len >> 1);
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_2     ( READS_SIZE * READS_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_2     ( READS_SIZE * READS_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_2     ( READS_SIZE * READS_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer_2    ( reads_total_len >> 1);
-    std::vector<char,aligned_allocator<char>> weights_arr_buffer_2  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+    std::vector<char,aligned_allocator<char>> weights_arr_buffer_2 (READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_2  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer_2  (weights_arr, weights_arr + reads_total_len);
 
-  //  for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-  //      con_arr_buffer[i] = m[con_arr[i]];
-  //  }
+    for(int i = 0 ; i < con_total_len; i++){
+    //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+        con_arr_buffer_2[i] = m[con_arr[i]];
+    }
 
     //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-    for(int i = 0 ; i < con_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[con_arr[i]] & 0xf;
-        con_arr_buffer_2[idx] = (con_arr_buffer_2[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("con_arr_buffer_2[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_2[idx]);
-    }
+   // for(int i = 0 ; i < con_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[con_arr[i]] & 0xf;
+   //     con_arr_buffer_2[idx] = (con_arr_buffer_2[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("con_arr_buffer_2[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_2[idx]);
+   // }
 
- //   printf("Read Buffer:");     
- //   for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
- //       reads_arr_buffer[i] = m[reads_arr[i]];
- //       //unsigned char print_var = reads_arr_buffer[i];
- //       //printf("%x", print_var);     
- //   }
+    printf("Read Buffer:");     
     for(int i = 0 ; i < reads_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[reads_arr[i]] & 0xf;
-        reads_arr_buffer_2[idx] = (reads_arr_buffer_2[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("reads_arr_buffer_2[%d]: %hhX \n", idx, (char)reads_arr_buffer_2[idx]);
+    //for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
+        reads_arr_buffer_2[i] = m[reads_arr[i]];
+        weights_arr_buffer_2[i] = weights_arr[i];
+        //unsigned char print_var = reads_arr_buffer[i];
+        //printf("%x", print_var);     
     }
+   // for(int i = 0 ; i < reads_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[reads_arr[i]] & 0xf;
+   //     reads_arr_buffer_2[idx] = (reads_arr_buffer_2[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("reads_arr_buffer_2[%d]: %hhX \n", idx, (char)reads_arr_buffer_2[idx]);
+   // }
 
     //std::vector<int,aligned_allocator<int>> con_len_buffer_2     (con_len, con_len + con_size);
-    std::vector<int,aligned_allocator<int>> con_len_buffer_2     (con_len, con_len + CON_SIZE);
+    //std::vector<int,aligned_allocator<int>> con_len_buffer_2     (con_len, con_len + CON_SIZE);
+    std::vector<int,aligned_allocator<int>> con_len_buffer_2     (CON_SIZE);
+    
+    for(int i = 0 ; i < con_size; i++){con_len_buffer_2[i] = con_len[i];}
     //std::vector<int,aligned_allocator<int>> reads_len_buffer_2     (reads_len, reads_len + reads_size_2);
-    std::vector<int,aligned_allocator<int>> reads_len_buffer_2     (reads_len, reads_len + READS_SIZE);
+    //std::vector<int,aligned_allocator<int>> reads_len_buffer_2     (reads_len, reads_len + READS_SIZE);
+    std::vector<int,aligned_allocator<int>> reads_len_buffer_2     (READS_SIZE);
+    for(int i = 0 ; i < reads_size_2; i++){reads_len_buffer_2[i] = reads_len[i];}
 
     printf("narg: %d\n", narg);
     printf("reads_size_2: %d\n", reads_size_2);
@@ -695,14 +735,14 @@ int main(int argc, char** argv)
 
 
     cl_mem_ext_ptr_t con_arr_buffer_ptr_2, reads_arr_buffer_ptr_2, weights_arr_buffer_ptr_2, con_len_buffer_ptr_2, reads_len_buffer_ptr_2, whd_buffer_ptr_2,  new_ref_idx_ptr_2; 
-    ddr_bank = banks[kernel_idx % 4];
+    //ddr_bank = banks[kernel_idx % 4];
     con_arr_buffer_ptr_2.flags  = ddr_bank; 
     con_len_buffer_ptr_2.flags  = ddr_bank; 
     reads_arr_buffer_ptr_2.flags  = ddr_bank; 
     reads_len_buffer_ptr_2.flags  = ddr_bank; 
     weights_arr_buffer_ptr_2.flags  = ddr_bank; 
     new_ref_idx_ptr_2.flags  = ddr_bank; 
-    //whd_buffer_ptr_2.flags = XCL_MEM_DDR_BANK3;
+    //whd_buffer_ptr_2.flags = ddr_bank;
  
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
 
@@ -827,44 +867,55 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     start = std::chrono::high_resolution_clock::now();
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_3     ( CON_SIZE * CON_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_3     ( CON_SIZE * CON_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_3     ( CON_SIZE * CON_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> con_arr_buffer_3      ( con_total_len >> 1);
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_3     ( READS_SIZE * READS_LEN >> 1);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_3     ( READS_SIZE * READS_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_3     ( READS_SIZE * READS_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer_3    ( reads_total_len >> 1);
-    std::vector<char,aligned_allocator<char>> weights_arr_buffer_3  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+    std::vector<char,aligned_allocator<char>> weights_arr_buffer_3 (READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_3  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer_3  (weights_arr, weights_arr + reads_total_len);
 
-  //  for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-  //      con_arr_buffer[i] = m[con_arr[i]];
-  //  }
+    for(int i = 0 ; i < con_total_len; i++){
+    //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
+        con_arr_buffer_3[i] = m[con_arr[i]];
+    }
 
     //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-    for(int i = 0 ; i < con_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[con_arr[i]] & 0xf;
-        con_arr_buffer_3[idx] = (con_arr_buffer_3[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("con_arr_buffer_3[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_3[idx]);
-    }
+   // for(int i = 0 ; i < con_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[con_arr[i]] & 0xf;
+   //     con_arr_buffer_3[idx] = (con_arr_buffer_3[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("con_arr_buffer_3[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_3[idx]);
+   // }
 
- //   printf("Read Buffer:");     
- //   for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
- //       reads_arr_buffer[i] = m[reads_arr[i]];
- //       //unsigned char print_var = reads_arr_buffer[i];
- //       //printf("%x", print_var);     
- //   }
+    printf("Read Buffer:");     
     for(int i = 0 ; i < reads_total_len; i++){
-        int idx = i >> 1;
-        int offset = (i % 2) << 2;
-        char c = m[reads_arr[i]] & 0xf;
-        reads_arr_buffer_3[idx] = (reads_arr_buffer_3[idx] & ~(0xf << offset)) | (c << offset);
-        //printf("reads_arr_buffer_3[%d]: %hhX \n", idx, (char)reads_arr_buffer_3[idx]);
+    //for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
+        reads_arr_buffer_3[i] = m[reads_arr[i]];
+        weights_arr_buffer_3[i] = weights_arr[i];
+        //unsigned char print_var = reads_arr_buffer[i];
+        //printf("%x", print_var);     
     }
+   // for(int i = 0 ; i < reads_total_len; i++){
+   //     int idx = i >> 1;
+   //     int offset = (i % 2) << 2;
+   //     char c = m[reads_arr[i]] & 0xf;
+   //     reads_arr_buffer_3[idx] = (reads_arr_buffer_3[idx] & ~(0xf << offset)) | (c << offset);
+   //     //printf("reads_arr_buffer_3[%d]: %hhX \n", idx, (char)reads_arr_buffer_3[idx]);
+   // }
 
     //std::vector<int,aligned_allocator<int>> con_len_buffer_3     (con_len, con_len + con_size);
-    std::vector<int,aligned_allocator<int>> con_len_buffer_3     (con_len, con_len + CON_SIZE);
+    //std::vector<int,aligned_allocator<int>> con_len_buffer_3     (con_len, con_len + CON_SIZE);
+    std::vector<int,aligned_allocator<int>> con_len_buffer_3     (CON_SIZE);
+    
+    for(int i = 0 ; i < con_size; i++){con_len_buffer_3[i] = con_len[i];}
     //std::vector<int,aligned_allocator<int>> reads_len_buffer_3     (reads_len, reads_len + reads_size_3);
-    std::vector<int,aligned_allocator<int>> reads_len_buffer_3     (reads_len, reads_len + READS_SIZE);
+    //std::vector<int,aligned_allocator<int>> reads_len_buffer_3     (reads_len, reads_len + READS_SIZE);
+    std::vector<int,aligned_allocator<int>> reads_len_buffer_3     (READS_SIZE);
+    for(int i = 0 ; i < reads_size_3; i++){reads_len_buffer_3[i] = reads_len[i];}
 
     printf("narg: %d\n", narg);
     printf("reads_size_3: %d\n", reads_size_3);
@@ -893,14 +944,14 @@ int main(int argc, char** argv)
 
 
     cl_mem_ext_ptr_t con_arr_buffer_ptr_3, reads_arr_buffer_ptr_3, weights_arr_buffer_ptr_3, con_len_buffer_ptr_3, reads_len_buffer_ptr_3, whd_buffer_ptr_3,  new_ref_idx_ptr_3; 
-    ddr_bank = banks[kernel_idx % 4];
+    //ddr_bank = banks[kernel_idx % 4];
     con_arr_buffer_ptr_3.flags  = ddr_bank; 
     con_len_buffer_ptr_3.flags  = ddr_bank; 
     reads_arr_buffer_ptr_3.flags  = ddr_bank; 
     reads_len_buffer_ptr_3.flags  = ddr_bank; 
     weights_arr_buffer_ptr_3.flags  = ddr_bank; 
     new_ref_idx_ptr_3.flags  = ddr_bank; 
-    //whd_buffer_ptr_3.flags = XCL_MEM_DDR_BANK3;
+    //whd_buffer_ptr_3.flags = ddr_bank;
  
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
 
@@ -963,7 +1014,6 @@ int main(int argc, char** argv)
    
 
 
-
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
@@ -986,7 +1036,7 @@ int main(int argc, char** argv)
     q.enqueueTask(krnl_indel, NULL, &events[0]);
     q.finish();
 
-    //event.wait();
+    events[0].wait();
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
     q.finish();
