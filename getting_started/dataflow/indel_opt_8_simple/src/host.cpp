@@ -125,9 +125,9 @@ int main(int argc, char** argv)
 
     std::vector<cl::Kernel> krnl_indels;
     krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
-    //krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
-    //krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
-    //krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
+    krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
+    krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
+    krnl_indels.push_back(cl::Kernel(program,"Indel_Accel"));
     std::chrono::high_resolution_clock::time_point start, finish;
     std::chrono::milliseconds duration;
 
@@ -141,8 +141,8 @@ int main(int argc, char** argv)
 
     std::chrono::milliseconds parse_time[PARALLEL_UNITS];
     //int kernel_idx = test_idx % 2;
-    cl::Kernel  krnl_indel = krnl_indels[0];
-    //cl::Kernel &  krnl_indel = krnl_indels[kernel_idx];
+    //cl::Kernel  krnl_indel = krnl_indels[0];
+    cl::Kernel &  krnl_indel = krnl_indels[kernel_idx];
     cl::CommandQueue & q = qs[kernel_idx];
     //char* test_num = arg;
     std::vector<cl::Memory> inBufVec, outBufVec;
@@ -1017,7 +1017,7 @@ int main(int argc, char** argv)
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
     //Copy input data to device global memory
     q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
-    q.finish();
+    //q.finish();
  
     //Launch the Kernel
     //cl::Event event;
@@ -1034,12 +1034,12 @@ int main(int argc, char** argv)
     krnl_indel.setArg(narg+1, work_group);
 
     q.enqueueTask(krnl_indel, NULL, &events[0]);
-    q.finish();
+    //q.finish();
 
-    events[0].wait();
+    //events[0].wait();
     //Copy Result from Device Global Memory to Host Local Memory
     q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
-    q.finish();
+    //q.finish();
     //OPENCL HOST CODE AREA END   
     //int * whd_buffer_arr = &whd_buffer[0];
     //Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
