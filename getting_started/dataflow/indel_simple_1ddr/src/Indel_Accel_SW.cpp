@@ -45,7 +45,7 @@ void whd (char* consensus, const int consensus_size, int* consensus_length, \
             
             min_whd[i * reads_size + j] = min;
             min_whd_idx[i * reads_size + j] = min_idx;
-            reads_base += local_reads_length;
+            //reads_base += local_reads_length;
         }
         //consensus_base += local_consensus_length;
     }
