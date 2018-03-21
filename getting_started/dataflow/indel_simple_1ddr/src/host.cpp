@@ -26,6 +26,8 @@
  **********/
 //OpenCL utility layer include
 #include "xcl2.hpp"
+
+#include "oclHelper.h"
 #include <vector>
 #include <assert.h>
 #include <map>
@@ -41,6 +43,7 @@
 #define WORK_ITEM_PER_GROUP 1
 #define PARALLEL_UNITS 1
 #define NUM_KERNELS 16
+
 // JENNY TODO
 // Put input and output onto different memory banks 
 // https://github.com/Xilinx/SDAccel_Examples/blob/master/getting_started/kernel_to_gmem/
@@ -50,6 +53,25 @@ typedef std::map<char, char> BasePairMap;
 BasePairMap m;
 
 #include "Indel_Accel_Host.cpp"
+// Wrap any OpenCL API calls that return error code(cl_int) with the below macro
+// to quickly check for an error
+#define OCL_CHECK(call)                                                        \
+  do {                                                                         \
+    cl_int err = call;                                                         \
+    if (err != CL_SUCCESS) {                                                   \
+      printf(__FILE__ ":%d: [ERROR] " #call " returned %s\n", __LINE__,        \
+             oclErrorCode(err));                                               \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  } while (0);
+
+// Checks OpenCL error codes
+void check(cl_int err_code) {
+  if (err_code != CL_SUCCESS) {
+    printf("ERROR: %d\n", err_code);
+    exit(EXIT_FAILURE);
+  }
+}
 
 void Indel_Rank (const int consensus_size, const int reads_size, int*  min_whd, int* __restrict new_ref_idx) {
     int new_ref[READS_SIZE];
@@ -87,6 +109,7 @@ int main(int argc, char** argv)
 
     printf("Parse scheduele file\n");
     int num_tests = 0;
+    //int* test_indices = parse_schedule("../indel_tests/ch22-schedule.txt", &num_tests);
     int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
 
     //if (argc < 2){
@@ -110,6 +133,8 @@ int main(int argc, char** argv)
     //cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     std::vector<cl::CommandQueue> qs( NUM_KERNELS, cl::CommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE));
     //cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
+    cl::Event events[NUM_KERNELS];
+    std::vector<std::vector<cl::Memory> > inBufVec_arr, outBufVec_arr;
     
     std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
 
@@ -121,6 +146,8 @@ int main(int argc, char** argv)
     //cl::Kernel krnl_indel(program,"Indel_Accel");
 
     std::vector<cl::Kernel> krnl_indels(NUM_KERNELS,  cl::Kernel(program,"Indel_Accel"));
+
+    cl_mem_ext_ptr_t con_arr_buffer_ptr[NUM_KERNELS], reads_arr_buffer_ptr[NUM_KERNELS], weights_arr_buffer_ptr[NUM_KERNELS], con_len_buffer_ptr[NUM_KERNELS], reads_len_buffer_ptr[NUM_KERNELS], whd_buffer_ptr[NUM_KERNELS],  new_ref_idx_ptr[NUM_KERNELS]; 
     std::chrono::high_resolution_clock::time_point start, finish;
     std::chrono::milliseconds duration;
 
@@ -129,16 +156,17 @@ int main(int argc, char** argv)
     int ** new_ref_idx_ref_arr = (int**) malloc(num_tests * sizeof(int*));
     std::vector<std::vector<int,aligned_allocator<int>> *> new_ref_idx_arr(num_tests);
 
+	//num_tests = 4;
   for (int test_idx = 0; test_idx< num_tests; test_idx+= PARALLEL_UNITS) {
     int kernel_idx = (test_idx / PARALLEL_UNITS) % NUM_KERNELS; 
 
     std::chrono::milliseconds parse_time[PARALLEL_UNITS];
     //int kernel_idx = test_idx % 2;
-    cl::Kernel & krnl_indel = krnl_indels[kernel_idx];
-    cl::CommandQueue & q = qs[kernel_idx];
+    //cl::Kernel &krnl_indel = krnl_indels[kernel_idx];
+    //cl::CommandQueue &q = qs[kernel_idx];
     //char* test_num = argv[1];
     std::vector<cl::Memory> inBufVec, outBufVec;
-
+    
     int * new_ref_idx_ref_0;
     int * new_ref_idx_ref_1;
     int * new_ref_idx_ref_2;
@@ -147,9 +175,10 @@ int main(int argc, char** argv)
     //int * new_ref_idx_1;    
     //int * new_ref_idx_2;
     //int * new_ref_idx_3;
-            int narg=0;
+    int narg=0;
     int reads_size_0, reads_size_1, reads_size_2, reads_size_3;
 
+    //const char* file_prefix = "../indel_tests/ch22-ir/";
     const char* file_prefix = "../indel_tests/ir_toy/";
     char test_num[5];
     char con[256] = "";
@@ -232,17 +261,22 @@ int main(int argc, char** argv)
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer     (weights_arr, weights_arr + READS_SIZE * READS_LEN);
 
     start = std::chrono::high_resolution_clock::now();
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_0     ( CON_SIZE * CON_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_0     ( CON_SIZE * CON_LEN);
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> * con_arr_buffer_0 = new std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>( CON_SIZE * CON_LEN);
+
     //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> con_arr_buffer_0     ( CON_SIZE * CON_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> con_arr_buffer_0      ( con_total_len >> 1);
-    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_0     ( READS_SIZE * READS_LEN);
+    //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_0     ( READS_SIZE * READS_LEN);
+
+    std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> * reads_arr_buffer_0 = new std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>( READS_SIZE * READS_LEN);
     //std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> reads_arr_buffer_0     ( READS_SIZE * READS_LEN >> 1);
     //std::vector<char,aligned_allocator<char>> reads_arr_buffer_0    ( reads_total_len >> 1);
-    std::vector<char,aligned_allocator<char>> weights_arr_buffer_0  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
+    std::vector<char,aligned_allocator<char>> * weights_arr_buffer_0 = new std::vector<char,aligned_allocator<char>>( READS_SIZE * READS_LEN);
+    //std::vector<char,aligned_allocator<char>> weights_arr_buffer_0  (weights_arr, weights_arr + READS_SIZE * READS_LEN);
     //std::vector<char,aligned_allocator<char>> weights_arr_buffer_0  (weights_arr, weights_arr + reads_total_len);
 
     for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
-        con_arr_buffer_0[i] = m[con_arr[i]];
+        (*con_arr_buffer_0)[i] = m[con_arr[i]];
     }
 
     //for(int i = 0 ; i < CON_SIZE * CON_LEN; i++){
@@ -256,7 +290,8 @@ int main(int argc, char** argv)
 
     printf("Read Buffer:");     
     for(int i = 0 ; i < READS_LEN * READS_SIZE; i++){
-        reads_arr_buffer_0[i] = m[reads_arr[i]];
+       (* reads_arr_buffer_0)[i] = m[reads_arr[i]];
+	(*weights_arr_buffer_0)[i] = weights_arr[i];
         //unsigned char print_var = reads_arr_buffer[i];
         //printf("%x", print_var);     
     }
@@ -272,6 +307,7 @@ int main(int argc, char** argv)
     std::vector<int,aligned_allocator<int>> con_len_buffer_0     (con_len, con_len + CON_SIZE + 1);
     //std::vector<int,aligned_allocator<int>> reads_len_buffer_0     (reads_len, reads_len + reads_size_0);
     std::vector<int,aligned_allocator<int>> reads_len_buffer_0     (reads_len, reads_len + READS_SIZE + 1);
+
 
     printf("narg: %d\n", narg);
     printf("reads_size_0: %d\n", reads_size_0);
@@ -299,78 +335,82 @@ int main(int argc, char** argv)
     //printf("Preprocess time is: %0.3f ms\n", duration.count());
 
 
-    cl_mem_ext_ptr_t con_arr_buffer_ptr_0, reads_arr_buffer_ptr_0, weights_arr_buffer_ptr_0, con_len_buffer_ptr_0, reads_len_buffer_ptr_0, whd_buffer_ptr_0,  new_ref_idx_ptr_0; 
-    con_arr_buffer_ptr_0.flags  = ddr_bank; 
-    con_len_buffer_ptr_0.flags  = ddr_bank; 
-    reads_arr_buffer_ptr_0.flags  = ddr_bank; 
-    reads_len_buffer_ptr_0.flags  = ddr_bank; 
-    weights_arr_buffer_ptr_0.flags  = ddr_bank; 
-    new_ref_idx_ptr_0.flags  = ddr_bank; 
-    //whd_buffer_ptr_0.flags = ddr_bank;
+    con_arr_buffer_ptr[kernel_idx].flags  = ddr_bank; 
+    con_len_buffer_ptr[kernel_idx].flags  = ddr_bank; 
+    reads_arr_buffer_ptr[kernel_idx].flags  = ddr_bank; 
+    reads_len_buffer_ptr[kernel_idx].flags  = ddr_bank; 
+    weights_arr_buffer_ptr[kernel_idx].flags  = ddr_bank; 
+    new_ref_idx_ptr[kernel_idx].flags  = ddr_bank; 
+    //whd_buffer_ptr[kernel_idx].flags = ddr_bank;
  
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
 
     // Setting input and output objects
-    con_arr_buffer_ptr_0.obj = con_arr_buffer_0.data();
-    //con_len_buffer_ptr_0.obj = con_len;  // this would cause extra memcpy since it is not aligned
-    con_len_buffer_ptr_0.obj = con_len_buffer_0.data();
-    reads_arr_buffer_ptr_0.obj = reads_arr_buffer_0.data();
-    //reads_len_buffer_ptr_0.obj = reads_len;
-    reads_len_buffer_ptr_0.obj = reads_len_buffer_0.data();
-    weights_arr_buffer_ptr_0.obj = weights_arr_buffer_0.data();
-    //whd_buffer_ptr_0.obj = whd_buffer_0.data();
-    new_ref_idx_ptr_0.obj = new_ref_idx_0->data();
+    con_arr_buffer_ptr[kernel_idx].obj = con_arr_buffer_0->data();
+    con_len_buffer_ptr[kernel_idx].obj = con_len;  // this would cause extra memcpy since it is not aligned
+    //con_len_buffer_ptr[kernel_idx].obj = con_len_buffer_0.data();
+    reads_arr_buffer_ptr[kernel_idx].obj = reads_arr_buffer_0->data();
+    reads_len_buffer_ptr[kernel_idx].obj = reads_len;
+    //reads_len_buffer_ptr[kernel_idx].obj = reads_len_buffer_0.data();
+    weights_arr_buffer_ptr[kernel_idx].obj = weights_arr_buffer_0->data();
+    //whd_buffer_ptr[kernel_idx].obj = whd_buffer_0.data();
+    new_ref_idx_ptr[kernel_idx].obj = new_ref_idx_0->data();
 
     std::cout << "Preprocess time is : " << duration.count() << " ms\n";
     // Setting param to zero 
-    con_arr_buffer_ptr_0.param = 0; con_len_buffer_ptr_0.param = 0;
-    reads_arr_buffer_ptr_0.param = 0; reads_len_buffer_ptr_0.param = 0; 
-    weights_arr_buffer_ptr_0.param = 0; new_ref_idx_ptr_0.param = 0;
-    whd_buffer_ptr_0.param = 0;
+    con_arr_buffer_ptr[kernel_idx].param = 0; con_len_buffer_ptr[kernel_idx].param = 0;
+    reads_arr_buffer_ptr[kernel_idx].param = 0; reads_len_buffer_ptr[kernel_idx].param = 0; 
+    weights_arr_buffer_ptr[kernel_idx].param = 0; new_ref_idx_ptr[kernel_idx].param = 0;
+    whd_buffer_ptr[kernel_idx].param = 0;
 
     printf("Finish creating buffers\n");
     //Allocate Buffer in Global Memory
 
     cl::Buffer con_arr_input_0(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
-            CON_SIZE * CON_LEN, &con_arr_buffer_ptr_0);
+            CON_SIZE * CON_LEN, &con_arr_buffer_ptr[kernel_idx]);
     cl::Buffer reads_arr_input_0(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
-            READS_SIZE * READS_LEN, &reads_arr_buffer_ptr_0);
+            READS_SIZE * READS_LEN, &reads_arr_buffer_ptr[kernel_idx]);
     cl::Buffer weights_arr_input_0(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX ,\ 
-            READS_SIZE * READS_LEN, &weights_arr_buffer_ptr_0);
+            READS_SIZE * READS_LEN, &weights_arr_buffer_ptr[kernel_idx]);
 
     cl::Buffer con_len_input_0(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
-            (CON_SIZE+1) * sizeof(int), &con_len_buffer_ptr_0);
+            (CON_SIZE+1) * sizeof(int), &con_len_buffer_ptr[kernel_idx]);
     cl::Buffer reads_len_input_0(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY | CL_MEM_EXT_PTR_XILINX , 
-            (READS_SIZE+1) * sizeof(int), &reads_len_buffer_ptr_0);
+            (READS_SIZE+1) * sizeof(int), &reads_len_buffer_ptr[kernel_idx]);
 
     //cl::Buffer whd_output_0(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY| CL_MEM_EXT_PTR_XILINX ,
-    //        reads_size_0 * con_size * 2 * sizeof(int), &whd_buffer_ptr_0);
+    //        reads_size_0 * con_size * 2 * sizeof(int), &whd_buffer_ptr[kernel_idx]);
     cl::Buffer new_ref_idx_output_0(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY | CL_MEM_EXT_PTR_XILINX ,
-            READS_SIZE * sizeof(int), &new_ref_idx_ptr_0);
+            READS_SIZE * sizeof(int), &new_ref_idx_ptr[kernel_idx]);
 
-    inBufVec.push_back(con_len_input_0);
-    inBufVec.push_back(reads_len_input_0);
-    inBufVec.push_back(con_arr_input_0);
-    inBufVec.push_back(reads_arr_input_0);
-    inBufVec.push_back(weights_arr_input_0);
+
+    inBufVec_arr.push_back(inBufVec);
+    outBufVec_arr.push_back(outBufVec);
+
+    inBufVec_arr.back().push_back(con_len_input_0);
+    inBufVec_arr.back().push_back(reads_len_input_0);
+    inBufVec_arr.back().push_back(con_arr_input_0);
+    inBufVec_arr.back().push_back(reads_arr_input_0);
+    inBufVec_arr.back().push_back(weights_arr_input_0);
     //outBufVec.push_back(whd_output_0);
-    outBufVec.push_back(new_ref_idx_output_0);
+    outBufVec_arr.back().push_back(new_ref_idx_output_0);
 
     //Set the Kernel Arguments
-    krnl_indel.setArg(narg++, con_arr_input_0);
-    krnl_indel.setArg(narg++, con_size);
-    krnl_indel.setArg(narg++, con_len_input_0);
-    krnl_indel.setArg(narg++, reads_arr_input_0);
-    krnl_indel.setArg(narg++, reads_size_0);
-    krnl_indel.setArg(narg++, reads_len_input_0);
-    krnl_indel.setArg(narg++, weights_arr_input_0);
-    //krnl_indel.setArg(narg++, whd_output_0);
-    krnl_indel.setArg(narg++, new_ref_idx_output_0);
+    krnl_indels[kernel_idx].setArg(narg++, con_arr_input_0);
+    krnl_indels[kernel_idx].setArg(narg++, con_size);
+    krnl_indels[kernel_idx].setArg(narg++, con_len_input_0);
+    krnl_indels[kernel_idx].setArg(narg++, reads_arr_input_0);
+    krnl_indels[kernel_idx].setArg(narg++, reads_size_0);
+    krnl_indels[kernel_idx].setArg(narg++, reads_len_input_0);
+    krnl_indels[kernel_idx].setArg(narg++, weights_arr_input_0);
+    //krnl_indels[kernel_idx].setArg(narg++, whd_output_0);
+    krnl_indels[kernel_idx].setArg(narg++, new_ref_idx_output_0);
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------//
     //Copy input data to device global memory
-    q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
-    q.finish();
+    //q.enqueueMigrateMemObjects(inBufVec, 0/* 0 means from host*/);
+    OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/));
+    //q.finish();
  
     //Launch the Kernel
     //cl::Event event;
@@ -379,20 +419,22 @@ int main(int argc, char** argv)
     //int work_group = WORK_GROUP;
     int work_group = 1;
 
-    cl::Event events[work_group];
 
     //for(int i = 0; i < work_group; i++) {
     int i = 0; 
-    krnl_indel.setArg(narg+0, i);
-    krnl_indel.setArg(narg+1, work_group);
+    krnl_indels[kernel_idx].setArg(narg+0, i);
+    krnl_indels[kernel_idx].setArg(narg+1, work_group);
 
-    q.enqueueTask(krnl_indel, NULL, &events[0]);
-    q.finish();
+    //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
+    //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
+    OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, NULL));
+    //q.finish();
 
     //event.wait();
     //Copy Result from Device Global Memory to Host Local Memory
-    q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
-    q.finish();
+    //q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
+    OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, NULL, &events[kernel_idx]));
+    //q.finish();
     //OPENCL HOST CODE AREA END   
     //int * whd_buffer_arr = &whd_buffer[0];
     //Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
@@ -408,14 +450,45 @@ int main(int argc, char** argv)
       new_ref_idx_ref_arr[test_idx_0] = new_ref_idx_ref_0;
     }
     
+
+     //qs[kernel_idx].finish();
    // Compare_Results(0, reads_size_0, new_ref_idx_0, new_ref_idx_ref_0);
    // Compare_Results(1, reads_size_1, new_ref_idx_1, new_ref_idx_ref_1);
    // Compare_Results(2, reads_size_2, new_ref_idx_2, new_ref_idx_ref_2);
    // Compare_Results(3, reads_size_3, new_ref_idx_3, new_ref_idx_ref_3);
   }
 
-  for(int i; i < NUM_KERNELS; i ++) {
-     qs[i].finish();
+//while(1){
+  for(int i = 0; i < NUM_KERNELS; i ++) {
+  const char *status_str;
+  cl_int err; 
+	auto status = events[i].getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>(&err); 
+  switch (status) {
+  case CL_QUEUED:
+    status_str = "Queued";
+    break;
+  case CL_SUBMITTED:
+    status_str = "Submitted";
+    break;
+  case CL_RUNNING:
+    status_str = "Executing";
+    break;
+  case CL_COMPLETE:
+    status_str = "Completed";
+    break;
+  }
+        printf("i=%d, err=%d, %s\n", i, err, status_str);
+  }
+//}
+fflush(stdout);
+
+  for(int i = 0; i < NUM_KERNELS; i ++) {
+
+        printf("i: %d\n", i);
+    	events[i].wait();
+
+    	//qs[i].flush();
+     	//qs[i].finish();
   }
   for (int test_idx = 0; test_idx< num_tests; test_idx++) {
       Compare_Results(test_idx, reads_size_arr[test_idx], *(new_ref_idx_arr[test_idx]) , new_ref_idx_ref_arr[test_idx]);
