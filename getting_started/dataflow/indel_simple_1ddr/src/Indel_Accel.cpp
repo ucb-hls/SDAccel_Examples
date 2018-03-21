@@ -69,7 +69,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
                 // whd 
                 int whd = 0;
                 // Optimization tree based reduction
-                for (int l = 0; l < reads_length[j]; l++) {
+                for (int l = 0; l < local_reads_length; l++) {
 
                     //printf("%c", consensus[consensus_base + k + l]);
                     //printf("%c", reads[reads_base + k + l]);
@@ -136,15 +136,17 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
 }
 
 
-void Indel_Accel (ap_uint<4>* consensus, int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, \
+void Indel_Accel (ap_uint<4>* consensus, int* consensus_size, int* consensus_length, \
+    ap_uint<4>* reads, int* reads_size, int* reads_length, char* qs, int* new_ref_idx, \
     int global_id, int global_threads) {
  
  
     //ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int* new_ref_idx, int global_id, int global_threads) {
 #pragma HLS INTERFACE m_axi port=consensus offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=consensus_size offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=consensus_length offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=reads_size offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=reads_length offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=qs offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=new_ref_idx offset=slave bundle=gmem0
@@ -166,9 +168,17 @@ void Indel_Accel (ap_uint<4>* consensus, int consensus_size, int* consensus_leng
 
 printf("DEBUG:\n");
 #pragma HLS expression_balance
-#pragma HLS DATAFLOW
+//#pragma HLS DATAFLOW
 //Copy_Con(consensus, consensus_size, consensus_length);
-Indel_Accel_Krnl(consensus, consensus_size, consensus_length, reads, reads_size, reads_length, qs, new_ref_idx);
+// 0-2 2-4
+// Number of lengths 
+int con_size_base = consensus_size[global_id];
+int con_size = consensus_size[global_id + 1] - con_size_base;
+
+int reads_size_base = reads_size[global_id];
+int rs_size = reads_size[global_id + 1] - reads_size_base;
+    
+Indel_Accel_Krnl(consensus, con_size, &consensus_length[con_size_base], reads, rs_size, &reads_length[reads_size_base], qs, new_ref_idx);
 //Indel_Accel_Krnl(consensus_1, consensus_size_1, consensus_length_1, reads_1, reads_size_1, reads_length_1, qs_1, new_ref_idx_1);
 //Indel_Accel_Krnl(consensus_2, consensus_size_2, consensus_length_2, reads_2, reads_size_2, reads_length_2, qs_2, new_ref_idx_2);
 //Indel_Accel_Krnl(consensus_3, consensus_size_3, consensus_length_3, reads_3, reads_size_3, reads_length_3, qs_3, new_ref_idx_3);

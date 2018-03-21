@@ -18,7 +18,7 @@ void whd (char* consensus, const int consensus_size, int* consensus_length, \
                 // whd 
                 int whd = 0;
                 // Optimization tree based reduction
-                for (l = 0; l < reads_length[j]; l++) {
+                for (l = 0; l < local_reads_length; l++) {
 
                     //printf("%c", consensus[consensus_base + k + l]);
                     //printf("%c", reads[reads_base + k + l]);
@@ -40,7 +40,7 @@ void whd (char* consensus, const int consensus_size, int* consensus_length, \
                }
 
             }
-            fprintf(stderr, "min_idx %d\n", min_idx);
+            fprintf(stderr, "min_idx %d, min %d\n", min_idx, min);
             assert(min_idx <= local_consensus_length - local_reads_length);
             
             min_whd[i * reads_size + j] = min;
