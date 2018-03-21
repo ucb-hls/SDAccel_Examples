@@ -3,14 +3,15 @@ COMMON_REPO := ../../../
 include $(COMMON_REPO)/utility/boards.mk
 include $(COMMON_REPO)/libs/xcl2/xcl2.mk
 include $(COMMON_REPO)/libs/opencl/opencl.mk
+include $(COMMON_REPO)/libs/oclHelper/oclHelper.mk
 
 # Kernel profile 
 PROFILE:=yes
 
 # Host Application
-host_SRCS=./src/host.cpp $(xcl2_SRCS) 
+host_SRCS=./src/host.cpp $(xcl2_SRCS) $(oclHelper_SRCS) 
 host_HDRS=$(xcl2_HDRS) ./src/Indel_Accel.h
-host_CXXFLAGS=-I./src/ $(xcl2_CXXFLAGS) $(opencl_CXXFLAGS) -I/opt/Xilinx/SDx/2017.1.op/Vivado_HLS/include/ -g --debug
+host_CXXFLAGS=-I./src/ $(xcl2_CXXFLAGS) $(opencl_CXXFLAGS)  $(oclHelper_CXXFLAGS)  -I/opt/Xilinx/SDx/2017.1.op/Vivado_HLS/include/ -g --debug
 host_LDFLAGS=$(opencl_LDFLAGS)
 
 EXES=host
