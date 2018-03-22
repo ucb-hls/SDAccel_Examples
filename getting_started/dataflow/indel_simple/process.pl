@@ -3,17 +3,17 @@
 #use warnings;
 use File::Path qw( make_path );
 
-  my $path = "tmp.txt";
+  my $path = "make.txt";
 	my $success = 0;
   my @newlines;
-  for (my $i=0; $i < 4; $i++){
+  for (my $i=1; $i < 17; $i++){
 	if(!open FILE,"<", $path){
 		print $!;
 	} else {
-    push(@newlines, "//INST_$i============================================//\n");
+          #push(@newlines, "//INST_$i============================================//\n");
 		while(<FILE>){
 			$line = $_;
-      #chomp ($line);  
+      chomp ($line);  
       $line =~ s/_X/_$i/g;
       $line =~ s/_\|X/_X/g;
       $line =~ s/_\~X/$i/g;

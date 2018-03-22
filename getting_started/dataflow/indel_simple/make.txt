@@ -1,0 +1,3 @@
+--xp misc:map_connect=add.kernel.Indel_Accel_X.M_AXI_GMEM0.core.OCL_REGION_0.M00_AXI --xp misc:map_connect=add.kernel.Indel_Accel_X.M_AXI_GMEM1.core.OCL_REGION_0.M01_AXI --xp misc:map_connect=add.kernel.Indel_Accel_X.M_AXI_GMEM2.core.OCL_REGION_0.M02_AXI --xp misc:map_connect=add.kernel.Indel_Accel_X.M_AXI_GMEM3.core.OCL_REGION_0.M03_AXI  
+
+
