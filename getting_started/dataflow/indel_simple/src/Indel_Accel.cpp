@@ -83,7 +83,7 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
         int consensus_base = consensus_length[i];
         int local_consensus_length =  consensus_length[i+1] - consensus_length[i];
         for (int j = 0; j < reads_size; j++) {
-#pragma HLS unroll factor=16
+        #pragma HLS unroll factor=16
 
             int reads_base = reads_length[j];
             int local_reads_length = reads_length[j+1] - reads_length[j];
@@ -149,8 +149,8 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
             //new_ref[j] = min_whd[min_idx][j];
             //new_ref_idx[j] = min_whd_idx[min_idx][j];
-            new_ref[j] = min_whd[min_idx * reads_size + j];
-            new_ref_idx[j] = min_whd_idx[ min_idx * reads_size +j];
+            new_ref[reads_size_local_base + j] = min_whd[min_idx * reads_size + j];
+            new_ref_idx[reads_size_local_base + j] = min_whd_idx[ min_idx * reads_size +j];
  
         //} else{
         //    new_ref[j] = min_whd [j];
