@@ -18,7 +18,6 @@ extern "C" {
 void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
     ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int new_ref_idx_base){
 
-printf("DEBUG:\n");
 //#pragma HLS INLINE
     //#pragma HLS DATAFLOW
     #pragma HLS expression_balance
@@ -27,8 +26,9 @@ printf("DEBUG:\n");
     int new_ref[READS_SIZE];
     //int i, j, k, l;
     for (int i = 0; i < consensus_size; i++) {
-
         int consensus_base = consensus_length[i];
+
+        printf("con_base: %d\n", consensus_base);
         int local_consensus_length =  consensus_length[i+1] - consensus_length[i];
         for (int j = 0; j < reads_size; j++) {
         #pragma HLS unroll factor=4
@@ -159,9 +159,11 @@ printf("DEBUG:\n");
 // Number of lengths 
 int con_size_base = consensus_size[global_id];
 int con_size = consensus_size[global_id + 1] - con_size_base;
+printf("con_size_base[%d]: %d\n", global_id, con_size);
 
 int reads_size_base = reads_size[global_id];
 int rs_size = reads_size[global_id + 1] - reads_size_base;
+printf("reads_size_base: %d\n", rs_size);
     
 printf("DEBUG:\n");
 Indel_Accel_Krnl(consensus, con_size, &consensus_length[con_size_base], reads, rs_size, &reads_length[reads_size_base], qs, new_ref_idx, reads_size_base);
