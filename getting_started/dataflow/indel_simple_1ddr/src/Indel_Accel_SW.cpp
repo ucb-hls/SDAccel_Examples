@@ -170,7 +170,8 @@ void whd_ref (ap_uint<4>* consensus, const int consensus_size, int* consensus_le
 void generate_ref(std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* consensus, std::vector<int, aligned_allocator<int>>* con_size, std::vector<int, aligned_allocator<int>>* con_base, \
     std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* reads, std::vector<int, aligned_allocator<int>>* reads_size, std::vector<int, aligned_allocator<int>>* reads_base, std::vector<char, aligned_allocator<char>>* qs, std::vector<int, aligned_allocator<int>>* new_ref_idx) {
 
-    for (size_t i = 0; i < reads_size->size(); i++) {
+    // Since size is actual size + 1 [0, base]
+    for (size_t i = 0; i < reads_size->size() - 1; i++) {
         int con_size_base = (*con_size)[i];
         int con_size_local = (*con_size)[i + 1] - con_size_base;
 
@@ -186,6 +187,7 @@ void generate_ref(std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* consen
 
         new_ref_idx->insert(new_ref_idx->end(), new_ref_idx_vec.begin(), new_ref_idx_vec.end());
         free(new_ref);
+        free(new_ref_idx_ref);
      }
 }
 

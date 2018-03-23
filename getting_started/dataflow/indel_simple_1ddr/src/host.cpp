@@ -91,6 +91,7 @@ void parse_file(const char* file_prefix, int col_num, T* input_arr, std::vector<
     strcat(con, ".tbl");
 
     fp=fopen(con, "r");
+    printf("File: %s\n", con);
 
     if (fp == NULL)
         exit(EXIT_FAILURE);
@@ -160,8 +161,14 @@ void parse_file(const char* file_prefix, int col_num, T* input_arr, std::vector<
         if(option < 3) len_base->push_back(prev_len_base + base);
         line_num++;
     }
-    if(option < 3)size_base->push_back(prev_size_base + line_num); 
-    //printf("%d\n", len);
+
+    printf("what\n");
+    if(option < 3) {
+        size_base->push_back(prev_size_base + line_num); 
+        printf("%d\t", size_base->back());
+        printf("%d\t", prev_size_base + line_num);
+    }
+    printf("\n");
     //int arr_size = len * num_lines;
     //printf("%d\n", arr_size);
     //for(int i= 0; i < arr_size; i++ ){
@@ -212,7 +219,7 @@ int main(int argc, char** argv ){
     //cl::Event events[3];
     std::vector<std::vector<cl::Event>*> events(3);  
     events[0] = new std::vector<cl::Event>(1);
-    events[1] = new std::vector<cl::Event>(1);
+    //events[1] = new std::vector<cl::Event>(1);
     events[2] = new std::vector<cl::Event>(1);
 
     std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
@@ -236,6 +243,7 @@ int main(int argc, char** argv ){
 
     std::vector<std::vector<cl::Memory> > inBufVec_arr, outBufVec_arr;
     for (int test_idx = 0; test_idx< num_tests; test_idx+=BATCH_SIZE ) {
+
 
         // Allocate Buffers
         std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> * con_arr_buffer = new std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>();
@@ -262,7 +270,7 @@ int main(int argc, char** argv ){
         int reads_total_size = reads_size_buffer->back();
         printf("reads_total_size: %d\n", reads_total_size);
         std::vector<int,aligned_allocator<int>> * new_ref_idx_buffer = new std::vector<int,aligned_allocator<int>> (reads_total_size); 
-        std::vector<int,aligned_allocator<int>> * new_ref_idx_ref_buffer = new std::vector<int,aligned_allocator<int>> (reads_total_size); 
+        std::vector<int,aligned_allocator<int>> * new_ref_idx_ref_buffer = new std::vector<int,aligned_allocator<int>> (); 
 
         con_arr_buffer_ptr[kernel_idx].flags  = ddr_bank; 
         con_size_buffer_ptr[kernel_idx].flags  = ddr_bank; 
@@ -342,15 +350,8 @@ int main(int argc, char** argv ){
         //krnl_indels[kernel_idx].setArg(narg++, whd_output);
         krnl_indels[kernel_idx].setArg(narg++, new_ref_idx_output);
 
-        //int work_group = WORK_GROUP;
-        int work_group = 16;
 
-        for(int i = 0; i < work_group; i++) {
-            krnl_indels[kernel_idx].setArg(narg+0, i);
-            krnl_indels[kernel_idx].setArg(narg+1, work_group);
-        }
-
-
+       
         OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/, NULL, &((*events[0])[0])));
         //q.finish();
      
@@ -358,10 +359,17 @@ int main(int argc, char** argv ){
         //cl::Event event;
         start = std::chrono::high_resolution_clock::now(); 
 
-        //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
-        //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
-        OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], &((*events[1])[0])));
-        //q.finish();
+        int work_group = batch_size;
+        events[1] = new std::vector<cl::Event>(work_group);
+        for(int i = 0; i < work_group; i++) {
+            krnl_indels[kernel_idx].setArg(narg+0, i);
+            krnl_indels[kernel_idx].setArg(narg+1, work_group);
+
+            //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
+            //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
+            OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], &((*events[1])[i])));
+            //q.finish();
+        }
 
         //event.wait();
         //Copy Result from Device Global Memory to Host Local Memory
