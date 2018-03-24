@@ -6,7 +6,7 @@
 #include "Indel_Accel.h"
 //#define CON_SIZE 2
 //#define READS_SIZE 8
-
+#define BLOCK_SIZE 64
 // JENNY TODO
 // ap_uint<3> for ATGCU 
 // ap_uint<512> to round it to power of 2 
@@ -31,7 +31,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
         printf("con_base: %d\n", consensus_base);
         int local_consensus_length =  consensus_length[i+1] - consensus_length[i];
         for (int j = 0; j < reads_size; j++) {
-        #pragma HLS unroll factor=4
+        #pragma HLS unroll factor=8
             int reads_base = reads_length[j];
             int local_reads_length = reads_length[j+1] - reads_length[j];
             printf( "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
@@ -47,25 +47,45 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
                 // whd 
                 int whd = 0;
                 // Optimization tree based reduction
-                for (int l = 0; l < local_reads_length; l++) {
-                #pragma HLS loop_tripcount min=0 max=256
-                    char con_char = consensus[consensus_base + k + l];
-                    con_char = con_char & 0xf;
-                    char reads_char = reads[reads_base + k + l];
-                    reads_char = reads_char & 0xf;
-                    printf("reads_char: %x -- con_char: %x; ", reads_char, con_char);
-                    printf("qs %d %d con %d %d,", reads_base, l,  consensus_base, k + l);
-            
-                    if (consensus[consensus_base + k + l] != reads[reads_base + l]){
-                        whd += qs[reads_base + l];
-                        //if(k == 8 & j == 1){
-                        //    printf("whd: %d\t", whd);
-                        //}
-                    }                        
-                    printf("whd: %d\t", whd);
-                    printf("\t");
+                for (int l = 0; l < local_reads_length; l+=BLOCK_SIZE) {
+                //#pragma HLS DATAFLOW
+                        
+                    ap_uint<4> reads_buffer[BLOCK_SIZE];
+                    ap_uint<4> con_buffer[BLOCK_SIZE];
+                    char qs_buffer[BLOCK_SIZE];
+                    char whd_buffer[BLOCK_SIZE];
+                        
+                    int block_size = (local_reads_length - l) > BLOCK_SIZE ? BLOCK_SIZE : (local_reads_length  - l);
+                    for (int ll = 0; ll < block_size; ll++) {
+                    #pragma HLS loop_tripcount min=0 max=128
+                        reads_buffer[ll] = reads[reads_base + l + ll]; 
+                        qs_buffer[ll] = qs[reads_base + l + ll]; 
+                        con_buffer[ll] = consensus[consensus_base + k + l + ll];
+                    }
 
+                   
+                    for (int ll = 0; ll < block_size; ll++) {
+                    #pragma HLS loop_tripcount min=0 max=128
+                    //#pragma HLS unroll factor=8
+                        char con_char = con_buffer[ll];
+                        con_char = con_char & 0xf;
+                        char reads_char = reads_buffer[ll];
+                        reads_char = reads_char & 0xf;
+                        printf("reads_char: %x -- con_char: %x; ", reads_char, con_char);
+                        printf("qs %d %d con %d %d,", reads_base, l + ll,  consensus_base, k + l + ll);
+                        whd_buffer[ll] = (con_buffer[ll] != reads_buffer[ll]) ? qs_buffer[ll] : 0;
+                    }
+
+                    for (int ll = 0; ll < block_size; ll++) {
+                    #pragma HLS loop_tripcount min=0 max=128
+                    #pragma HLS expression_balance
+                        whd += whd_buffer[ll];   
+                    }
                 }
+               
+                printf("whd: %d\t", whd);
+                printf("\t");
+
 
                 printf("\n");
                 if (whd < min) {
