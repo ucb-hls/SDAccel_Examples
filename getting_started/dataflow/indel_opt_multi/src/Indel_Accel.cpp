@@ -24,7 +24,7 @@ void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con
     //int reads_size = reads_size_base_1[global_id] - reads_size_local_base;
 
     int min_score = 0x7fffffff;
-    int min_idx = -0x7fffffff;
+    int min_idx = 0x7fffffff;
     int iterations = (consensus_size - 1) * reads_size; 
     int score = 0;
    // for (int itr = 0, i = 1, j = 0; itr < iterations; itr ++){
@@ -46,7 +46,8 @@ void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con
     for (int i = 1; i < consensus_size; i++) {
         int score = 0;
         for (int j = 0; j < reads_size; j++) {
-        #pragma HLS unroll factor=4
+        #pragma HLS PIPELINE
+        #pragma HLS unroll factor=2
             int tmp = min_whd[i * reads_size + j] - min_whd[j];
             score += (tmp > 0) ? tmp: -tmp;
         }
@@ -57,7 +58,8 @@ void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con
     //assert(min_idx < consensus_size);
     
     for (int j = 0; j < reads_size; j++) {
-    #pragma HLS unroll factor=4
+    #pragma HLS PIPELINE
+    #pragma HLS unroll factor=2
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
             //new_ref[j] = min_whd[min_idx][j];
             //new_ref_idx[j] = min_whd_idx[min_idx][j];
@@ -103,7 +105,7 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
         printf("con_base: %d\n", consensus_base);
         int local_consensus_length =  consensus_length[i+1] - consensus_length[i];
         for (int j = 0; j < reads_size; j++) {
-        #pragma HLS unroll factor=16
+        #pragma HLS unroll factor=4
             int reads_base = reads_length[j];
             int local_reads_length = reads_length[j+1] - reads_length[j];
             printf( "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
@@ -123,13 +125,13 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
                 //#pragma HLS unroll factor=4
                         
                     ap_uint<4> reads_buffer[BLOCK_SIZE];
-                    #pragma HLS array_partition variable=reads_buffer cyclic factor=4
+                    #pragma HLS array_partition variable=reads_buffer cyclic factor=2
                     ap_uint<4> con_buffer[BLOCK_SIZE];
-                    #pragma HLS array_partition variable=con_buffer cyclic factor=4
+                    #pragma HLS array_partition variable=con_buffer cyclic factor=2
                     char qs_buffer[BLOCK_SIZE]; 
-                    #pragma HLS array_partition variable=qs_buffer cyclic factor=4
+                    #pragma HLS array_partition variable=qs_buffer cyclic factor=2
                     char whd_buffer[BLOCK_SIZE];
-                    #pragma HLS array_partition variable=whd_buffer cyclic factor=4
+                    #pragma HLS array_partition variable=whd_buffer cyclic factor=2
                         
                     int block_size = (local_reads_length - l) > BLOCK_SIZE ? BLOCK_SIZE : (local_reads_length  - l);
                     for (int ll = 0; ll < block_size; ll++) {
@@ -144,7 +146,8 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
                    
                     for (int ll = 0; ll < block_size; ll++) {
                     #pragma HLS loop_tripcount min=0 max=128
-                    #pragma HLS unroll factor=4
+                    #pragma HLS unroll factor=2
+                    #pragma HLS PIPELINE
                     //yy#pragma HLS unroll factor=8
                         char con_char = con_buffer[ll];
                         con_char = con_char & 0xf;
@@ -157,7 +160,8 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
 
                     for (int ll = 0; ll < block_size; ll++) {
                     #pragma HLS loop_tripcount min=0 max=128
-                    #pragma HLS unroll factor=4
+                    #pragma HLS unroll factor=2
+                    #pragma HLS PIPELINE
                     #pragma HLS expression_balance
                         whd += whd_buffer[ll];   
                     }
@@ -194,7 +198,7 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
 
 void Indel_Accel (ap_uint<4>* consensus, int* consensus_size, int* consensus_length, \
     ap_uint<4>* reads, int* reads_size, int* reads_length, char* qs, int* new_ref_idx, \
-    int global_id, int global_threads, int step_size) {
+    int global_id, int global_threads ) {
  
     //ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int* new_ref_idx, int global_id, int global_threads) {
 #pragma HLS INTERFACE m_axi port=consensus offset=slave bundle=gmem0
@@ -234,7 +238,7 @@ void Indel_Accel (ap_uint<4>* consensus, int* consensus_size, int* consensus_len
 //printf("reads_size_base: %d\n", rs_size);
 //
 #pragma HLS DATAFLOW
-for (int itr; itr < step_size; itr ++){
+for (int itr; itr < global_threads; itr ++){
 #pragma HLS unroll factor=4
 int min_whd[CON_SIZE * READS_SIZE];
 //#pragma HLS array_partition variable=min_whd cyclic factor=16

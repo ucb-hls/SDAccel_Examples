@@ -83,7 +83,7 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
         int consensus_base = consensus_length[i];
         int local_consensus_length =  consensus_length[i+1] - consensus_length[i];
         for (int j = 0; j < reads_size; j++) {
-        #pragma HLS unroll factor=16
+        #pragma HLS unroll factor=4
 
             int reads_base = reads_length[j];
             int local_reads_length = reads_length[j+1] - reads_length[j];
