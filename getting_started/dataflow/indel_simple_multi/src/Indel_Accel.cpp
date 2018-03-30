@@ -200,14 +200,14 @@ int index = (global_id << 2) + itr;
 int con_size_base = consensus_size[index];
 int con_size = consensus_size[index + 1] - con_size_base;
 printf("itr: %d index: %d, global_id %d \n", itr, index, global_id);
-printf("con_size_base[%d]: %d\n", index, con_size);
+printf("con_size_base: %d \t con_size: %d \n", con_size_base, con_size);
 
 int reads_size_base = reads_size[index];
 int rs_size = reads_size[index + 1] - reads_size_base;
-printf("reads_size_base: %d\n", rs_size);
+printf("reads_size_base: %d \t reads_size: %d \n", reads_size_base, rs_size);
     
 printf("DEBUG:\n");
-
+printf("\n");
 Indel_Accel_Krnl(consensus, con_size, &consensus_length[con_size_base], reads, rs_size, &reads_length[reads_size_base], qs, new_ref_idx, reads_size_base);
 //Indel_Accel_Krnl(consensus_1, consensus_size_1, consensus_length_1, reads_1, reads_size_1, reads_length_1, qs_1, new_ref_idx_1);
 //Indel_Accel_Krnl(consensus_2, consensus_size_2, consensus_length_2, reads_2, reads_size_2, reads_length_2, qs_2, new_ref_idx_2);

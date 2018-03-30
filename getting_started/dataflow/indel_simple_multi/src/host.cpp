@@ -378,7 +378,7 @@ int main(int argc, char** argv ){
         //q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
         
         
-        qs[kernel_idx].finish();
+      	//qs[kernel_idx].finish();
         OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, events[1], &((*events[2])[0])));
         qs[kernel_idx].finish();
         //OPENCL HOST CODE AREA END   

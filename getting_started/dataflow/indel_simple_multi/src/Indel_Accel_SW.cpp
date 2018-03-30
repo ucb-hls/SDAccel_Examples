@@ -81,11 +81,10 @@ void whd_vec (ap_uint<4>* consensus, const int consensus_size, int* consensus_le
                         //    printf("whd: %d\t", whd);
                         //}
                     }                        
-                    //printf("whd: %d\t", whd);
                     //printf("\t");
 
                 }
-
+                //printf("whd: %d\t", whd);
                 //printf("\n");
                 if (whd < min) {
                     min =  whd; 
@@ -95,7 +94,7 @@ void whd_vec (ap_uint<4>* consensus, const int consensus_size, int* consensus_le
             }
             fprintf(stderr, "min_idx %d, min %d\n", min_idx, min);
             assert(min_idx <= local_consensus_length - local_reads_length);
-            
+
             min_whd[i * reads_size + j] = min;
             min_whd_idx[i * reads_size + j] = min_idx;
             //reads_base += local_reads_length;
@@ -177,10 +176,11 @@ void generate_ref(std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* consen
 
         int reads_size_base = (*reads_size)[i];
         int rs_size_local = (*reads_size)[i + 1] - reads_size_base;
-       
+
+        printf("TEST %d base: %d\n", i, reads_size_base);
         int* new_ref = (int*) malloc(rs_size_local* sizeof(int));
         int* new_ref_idx_ref = (int*) malloc(rs_size_local* sizeof(int));
-        whd_ref(consensus->data(), con_size_local, &(con_base->data())[con_size_base], reads->data(), rs_size_local, &(reads_base->data()[reads_size_base]), &(qs->data()[reads_size_base]), new_ref, new_ref_idx_ref);
+        whd_ref(consensus->data(), con_size_local, &(con_base->data())[con_size_base], reads->data(), rs_size_local, &(reads_base->data()[reads_size_base]), qs->data(), new_ref, new_ref_idx_ref);
 
         std::vector<int> new_ref_vec(new_ref, new_ref + rs_size_local);
         std::vector<int> new_ref_idx_vec(new_ref_idx_ref, new_ref_idx_ref + rs_size_local);
