@@ -194,11 +194,12 @@ printf("DEBUG:\n");
 //Copy_Con(consensus, consensus_size, consensus_length);
 // 0-2 2-4
 // Number of lengths 
-for (int itr; itr < global_threads; itr ++){
-#pragma HLS unroll factor=8
-int index = global_id << 2 + itr;
+for (int itr = 0; itr < global_threads; itr ++){
+#pragma HLS unroll factor=4
+int index = (global_id << 2) + itr;
 int con_size_base = consensus_size[index];
 int con_size = consensus_size[index + 1] - con_size_base;
+printf("itr: %d index: %d, global_id %d \n", itr, index, global_id);
 printf("con_size_base[%d]: %d\n", index, con_size);
 
 int reads_size_base = reads_size[index];
