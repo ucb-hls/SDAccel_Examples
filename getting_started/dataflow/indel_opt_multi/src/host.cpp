@@ -45,7 +45,7 @@ void check(cl_int err_code) {
     exit(EXIT_FAILURE);
   }
 }
-#define BATCH_SIZE 32
+//#define BATCH_SIZE 32
 #define NUM_KERNELS 2
 
 void get_filename (const char* file_prefix, char* con, char* reads, int number){
@@ -187,6 +187,7 @@ int main(int argc, char** argv ){
     //int* test_indices = parse_schedule("../indel_tests/ch22-schedule.txt", &num_tests);
     int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
 
+    //num_tests  = 16;
     // Set up the mapping for 4bit representation
     m['A'] = 0;
     m['T'] = 1;
@@ -242,6 +243,7 @@ int main(int argc, char** argv ){
 //////OPENCL HOST CODE SETUP END////////
 
     std::vector<std::vector<cl::Memory> > inBufVec_arr, outBufVec_arr;
+    int BATCH_SIZE = num_tests; 
     for (int test_idx = 0; test_idx< num_tests; test_idx+=BATCH_SIZE ) {
 
 
@@ -359,11 +361,11 @@ int main(int argc, char** argv ){
         //cl::Event event;
         start = std::chrono::high_resolution_clock::now(); 
 
-        int work_group = batch_size;
+        int work_group = batch_size >> 2;
         events[1] = new std::vector<cl::Event>(work_group);
         for(int i = 0; i < work_group; i++) {
             krnl_indels[kernel_idx].setArg(narg+0, i);
-            krnl_indels[kernel_idx].setArg(narg+1, work_group);
+            krnl_indels[kernel_idx].setArg(narg+1, 4);
 
             //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
             //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
@@ -376,6 +378,7 @@ int main(int argc, char** argv ){
         //q.enqueueMigrateMemObjects(outBufVec, CL_MIGRATE_MEM_OBJECT_HOST);
         
         
+      	//qs[kernel_idx].finish();
         OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, events[1], &((*events[2])[0])));
         qs[kernel_idx].finish();
         //OPENCL HOST CODE AREA END   

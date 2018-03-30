@@ -16,12 +16,15 @@
 
 extern "C" {
 
-void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con_size_base_1, int* reads_size_base, int* reads_size_base_1, */int* new_ref_idx, int global_id, int con_size_local_base, int consensus_size, int reads_size_local_base, int reads_size){
+void Indel_Rank(hls::stream<int> & min_whd, hls::stream<int> &  min_whd_idx, /*int* con_size_base, int* con_size_base_1, int* reads_size_base, int* reads_size_base_1, */int* new_ref_idx, int global_id, int con_size_local_base, int consensus_size, int reads_size_local_base, int reads_size){
 
     //int con_size_local_base = con_size_base[global_id];
-    //int consensus_size = con_size_base_1[global_id] - con_size_local_base;
+    //int consensus_size = con_siz`e_base_1[global_id] - con_size_local_base;
     //int reads_size_local_base = reads_size_base[global_id];
     //int reads_size = reads_size_base_1[global_id] - reads_size_local_base;
+    //
+    int min_whd_ref[READS_SIZE];
+    int min_whd_idx_ref[CON_SIZE * READS_SIZE];
 
     int min_score = 0x7fffffff;
     int min_idx = 0x7fffffff;
@@ -43,13 +46,17 @@ void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con
    //     }
    // }
 
-    for (int i = 1; i < consensus_size; i++) {
+    for (int i = 0; i < consensus_size; i++) {
         int score = 0;
         for (int j = 0; j < reads_size; j++) {
         #pragma HLS PIPELINE
-        #pragma HLS unroll factor=2
-            int tmp = min_whd[i * reads_size + j] - min_whd[j];
+          if (i == 0) {
+             min_whd_ref[j] = min_whd.read();
+          } else {
+            int tmp = min_whd.read() - min_whd_ref[j];
             score += (tmp > 0) ? tmp: -tmp;
+          }
+          min_whd_idx_ref[i * reads_size + j] = min_whd_idx.read();
         }
         min_idx = (score < min_score) ? i : min_idx;
         //scores[i] = score;
@@ -64,7 +71,7 @@ void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con
             //new_ref[j] = min_whd[min_idx][j];
             //new_ref_idx[j] = min_whd_idx[min_idx][j];
             //new_ref[new_ref_idx_base + j] = min_whd[min_idx * reads_size + j];
-            new_ref_idx[reads_size_local_base + j] = min_whd_idx[ min_idx * reads_size +j];
+            new_ref_idx[reads_size_local_base + j] = min_whd_idx_ref[ min_idx * reads_size +j];
  
         //} else{
         //    new_ref[j] = min_whd [j];
@@ -78,7 +85,7 @@ void Indel_Rank(int * min_whd, int * min_whd_idx, /*int* con_size_base, int* con
 //whd(con_arr, con_size, con_len, reads_arr, reads_size, reads_len, weights_arr, min_whd, min_whd_idx);
 
 void Indel_Accel_Krnl (ap_uint<4>* consensus, int* con_size_base, int* con_size_base_1, int* abs_consensus_length, \
-    ap_uint<4>* reads, int* reads_size_base, int* reads_size_base_1, int* abs_reads_length, char* qs, int* new_ref_idx, int global_id, int global_threads, int* min_whd, int* min_whd_idx, int* con_size_local_base_ptr, int* consensus_size_ptr, int* reads_size_local_base_ptr, int* reads_size_ptr){
+    ap_uint<4>* reads, int* reads_size_base, int* reads_size_base_1, int* abs_reads_length, char* qs, int* new_ref_idx, int global_id, int global_threads, hls::stream<int> & min_whd, hls::stream<int> &  min_whd_idx, int* con_size_local_base_ptr, int* consensus_size_ptr, int* reads_size_local_base_ptr, int* reads_size_ptr){
 
 int con_size_local_base = con_size_base[global_id];
 *con_size_local_base_ptr = con_size_local_base;
@@ -185,9 +192,10 @@ int * reads_length = &abs_reads_length[reads_size_local_base];
             
             //min_whd[i][j] = min;
             //min_whd_idx[i][j] = min_idx;
-            min_whd[i * reads_size + j] = min;
-            min_whd_idx[i * reads_size + j] = min_idx;
- 
+            //min_whd[i * reads_size + j] = min;
+            //min_whd_idx[i * reads_size + j] = min_idx;
+            min_whd << min;
+            min_whd_idx << min_idx;
             //reads_base += local_reads_length;
         }
         //consensus_base += local_consensus_length;
@@ -238,12 +246,17 @@ void Indel_Accel (ap_uint<4>* consensus, int* consensus_size, int* consensus_len
 //printf("reads_size_base: %d\n", rs_size);
 //
 #pragma HLS DATAFLOW
-for (int itr; itr < global_threads; itr ++){
+for (int itr = 0; itr < global_threads; itr ++){
 #pragma HLS unroll factor=4
-int min_whd[CON_SIZE * READS_SIZE];
+//int min_whd[CON_SIZE * READS_SIZE];
 //#pragma HLS array_partition variable=min_whd cyclic factor=16
-int min_whd_idx[CON_SIZE * READS_SIZE];
+//int min_whd_idx[CON_SIZE * READS_SIZE];
 //#pragma HLS array_partition variable=min_whd_idx cyclic factor=16
+
+hls::stream<int> min_whd;
+hls::stream<int> min_whd_idx;
+#pragma HLS STREAM variable=min_whd depth=32
+#pragma HLS STREAM variable=min_whd_idx depth=32
 
 int con_size_local_base, consensus_size_ptr, reads_size_local_base, reads_size_ptr;
 

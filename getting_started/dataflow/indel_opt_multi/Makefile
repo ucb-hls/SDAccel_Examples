@@ -27,7 +27,7 @@ Indel_Accel_LDCLFLAGS= --nk Indel_Accel:16 --xp vivado_param:project.runs.noRepo
 
 
 
-Indel_Accel_NDEVICES=xilinx:adm-pcie-7v3:4ddr
+Indel_Accel_NDEVICES=xilinx:adm-pcie-7v3:1ddr
 
 XOS=Indel_Accel
 

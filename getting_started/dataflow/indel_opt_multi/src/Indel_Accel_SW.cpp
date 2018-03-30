@@ -177,10 +177,11 @@ void generate_ref(std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* consen
 
         int reads_size_base = (*reads_size)[i];
         int rs_size_local = (*reads_size)[i + 1] - reads_size_base;
-       
+
+        printf("TEST %d base: %d\n", i, reads_size_base);
         int* new_ref = (int*) malloc(rs_size_local* sizeof(int));
         int* new_ref_idx_ref = (int*) malloc(rs_size_local* sizeof(int));
-        whd_ref(consensus->data(), con_size_local, &(con_base->data())[con_size_base], reads->data(), rs_size_local, &(reads_base->data()[reads_size_base]), &(qs->data()[reads_size_base]), new_ref, new_ref_idx_ref);
+        whd_ref(consensus->data(), con_size_local, &(con_base->data())[con_size_base], reads->data(), rs_size_local, &(reads_base->data()[reads_size_base]), qs->data(), new_ref, new_ref_idx_ref);
 
         std::vector<int> new_ref_vec(new_ref, new_ref + rs_size_local);
         std::vector<int> new_ref_idx_vec(new_ref_idx_ref, new_ref_idx_ref + rs_size_local);
