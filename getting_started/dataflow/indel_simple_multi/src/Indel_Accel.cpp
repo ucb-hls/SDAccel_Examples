@@ -18,21 +18,62 @@ extern "C" {
 void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
     ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int new_ref_idx_base){
 #pragma HLS INLINE
+#pragma HLS expression_balance
+    ap_uint<4> con_buffer [CON_SIZE * CON_LEN];
+    #pragma HLS array_partition variable=con_buffer cyclic factor=4
+    ap_uint<4> reads_buffer [READS_SIZE * READS_LEN];
+    #pragma HLS array_partition variable=reads_buffer cyclic factor=4
+    char weights_buffer[READS_SIZE * READS_LEN];
+    #pragma HLS array_partition variable=weights_buffer cyclic factor=4
+
+    int consensus_length_buffer[CON_SIZE];
+    #pragma HLS array_partition variable=consensus_length_buffer cyclic factor=2
+    int reads_length_buffer[READS_SIZE];
+    #pragma HLS array_partition variable=reads_length_buffer cyclic factor=2
+
+    for (int i = 0; i < consensus_size + 1; i++) {
+        consensus_length_buffer[i] = consensus_length[i];
+    }
+
+    for (int i = 0; i < reads_size + 1; i++) {
+        reads_length_buffer[i] = reads_length[i];
+    }
+
+    int con_base = consensus_length_buffer[0];
+    int con_end = consensus_length_buffer[consensus_size];
+    
+    for (int i = 0; i < con_end - con_base; i++) {
+        con_buffer[i] = consensus[con_base + i];
+    }
+
+    int rs_base = reads_length_buffer[0];
+    int rs_end = reads_length_buffer[reads_size];
+    
+    for (int i = 0; i < rs_end - rs_base; i++) {
+        reads_buffer[i] = reads[rs_base + i];
+        weights_buffer[i] = qs[rs_base + i];
+    }
+
     //#pragma HLS DATAFLOW
-    #pragma HLS expression_balance
     int min_whd[CON_SIZE * READS_SIZE];
+    #pragma HLS array_partition variable=min_whd cyclic factor=4
     int min_whd_idx[CON_SIZE * READS_SIZE];
+    #pragma HLS array_partition variable=min_whd_idx cyclic factor=4
     int new_ref[READS_SIZE];
+
+    
     //int i, j, k, l;
     for (int i = 0; i < consensus_size; i++) {
-        int consensus_base = consensus_length[i];
+        //int consensus_base = consensus_length[i];
+        int consensus_base = consensus_length_buffer[i] - con_base;
 
         printf("con_base: %d\n", consensus_base);
-        int local_consensus_length =  consensus_length[i+1] - consensus_length[i];
+        int local_consensus_length =  consensus_length_buffer[i+1] - consensus_length_buffer[i];
         for (int j = 0; j < reads_size; j++) {
         //#pragma HLS unroll factor=4
-            int reads_base = reads_length[j];
-            int local_reads_length = reads_length[j+1] - reads_length[j];
+            //int reads_base = reads_length[j];
+            int reads_base = reads_length_buffer[j] - rs_base;
+            int local_reads_length = reads_length_buffer[j+1] - reads_length_buffer[j];
             printf( "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
                 consensus_size, i, local_consensus_length, reads_size,  j, local_reads_length);
             int min = 0x7fffffff; 
@@ -48,10 +89,11 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
                 // Optimization tree based reduction
                 //for (int l = 0; l < local_reads_length; l+=BLOCK_SIZE) {
                 for (int l = 0; l < local_reads_length; l++) {
+                #pragma HLS unroll factor=4
                               //printf("%c", consensus[consensus_base + k + l]);
                     //printf("%c", reads[reads_base + k + l]);
-                    if (consensus[consensus_base + k + l] != reads[reads_base + l]){
-                        whd += qs[reads_base + l];
+                    if (con_buffer[consensus_base + k + l] != reads_buffer[reads_base + l]){
+                        whd += weights_buffer[reads_base + l];
                         //if(k == 8 & j == 1){
                         //    printf("whd: %d\t", whd);
                         //}
@@ -100,11 +142,11 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
                    // }
                 }
                 //int whd = whd_ptr[0];
-                printf("whd: %d\t", whd);
-                printf("\t");
+                //printf("whd: %d\t", whd);
+                //printf("\t");
 
 
-                printf("\n");
+                //printf("\n");
                 if (whd < min) {
                     min =  whd; 
                     min_idx = k; 
