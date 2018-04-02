@@ -45,6 +45,66 @@ void check(cl_int err_code) {
     exit(EXIT_FAILURE);
   }
 }
+
+// An event callback function that prints the operations performed by the OpenCL
+// runtime.
+void event_cb(cl_event event, cl_int cmd_status, void *data) {
+  cl_command_type command;
+  clGetEventInfo(event, CL_EVENT_COMMAND_TYPE, sizeof(cl_command_type),
+                 &command, nullptr);
+  cl_int status;
+  clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int),
+                 &status, nullptr);
+  const char *command_str;
+  const char *status_str;
+  switch (command) {
+  case CL_COMMAND_READ_BUFFER:
+    command_str = "buffer read";
+    break;
+  case CL_COMMAND_WRITE_BUFFER:
+    command_str = "buffer write";
+    break;
+  case CL_COMMAND_NDRANGE_KERNEL:
+    command_str = "kernel";
+    break;
+  case CL_COMMAND_MAP_BUFFER:
+    command_str = "kernel";
+    break;
+  case CL_COMMAND_COPY_BUFFER:
+    command_str = "kernel";
+    break;
+  case CL_COMMAND_MIGRATE_MEM_OBJECTS:
+        command_str = "buffer migrate";
+      break;
+  default:
+    command_str = "unknown";
+  }
+  switch (status) {
+  case CL_QUEUED:
+    status_str = "Queued";
+    break;
+  case CL_SUBMITTED:
+    status_str = "Submitted";
+    break;
+  case CL_RUNNING:
+    status_str = "Executing";
+    break;
+  case CL_COMPLETE:
+    status_str = "Completed";
+    break;
+  }
+  printf("[%s]: %s %s\n", reinterpret_cast<char *>(data), status_str,
+         command_str);
+  fflush(stdout);
+}
+
+// Sets the callback for a particular event
+void set_callback(cl_event event, const char *queue_name) {
+  OCL_CHECK(
+      clSetEventCallback(event, CL_COMPLETE, event_cb, (void *)queue_name));
+}
+
+
 //#define BATCH_SIZE 32
 #define NUM_KERNELS 2
 
@@ -192,7 +252,7 @@ int main(int argc, char** argv ){
     int* test_indices = parse_schedule("../indel_tests/ch22-schedule.txt", &num_tests);
     //int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
 
-    num_tests  = 64;
+    num_tests  = 32;
     printf("num_tests: %d \n", num_tests);
     // Set up the mapping for 4bit representation
     m['A'] = 0;
@@ -220,9 +280,9 @@ int main(int argc, char** argv ){
 
     cl::Context context(device);
     //cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
-    std::vector<cl::CommandQueue> qs( NUM_KERNELS, cl::CommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE));
+    //std::vector<cl::CommandQueue> qs( NUM_KERNELS, cl::CommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE));
     //std::vector<cl::CommandQueue> qs( NUM_KERNELS, cl::CommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE));
-    //cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
+    cl::CommandQueue qs(context, device, CL_QUEUE_PROFILING_ENABLE| CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
     //cl::Event events[3];
     std::vector<std::vector<cl::Event>*> events(3);  
     events[0] = new std::vector<cl::Event>(1);
@@ -288,6 +348,9 @@ int main(int argc, char** argv ){
 
         printf("reads_total_size: %d\n", reads_total_size);
         std::vector<int,aligned_allocator<int>> * new_ref_idx_buffer = new std::vector<int,aligned_allocator<int>> (reads_total_size); 
+	for (int i = 0; i < reads_total_size; i++) {
+		(*new_ref_idx_buffer)[i] = 0;
+	}
         std::vector<int,aligned_allocator<int>> * new_ref_idx_ref_buffer = new std::vector<int,aligned_allocator<int>> (); 
 
         con_arr_buffer_ptr[kernel_idx].flags  = ddr_bank; 
@@ -373,8 +436,12 @@ int main(int argc, char** argv ){
 
 
        
-        OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/, NULL, &((*events[0])[0])));
-        //q.finish();
+        //OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/, NULL, &((*events[0])[0])));
+        OCL_CHECK(qs.enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/, NULL, &((*events[0])[0])));
+ 	//set_callback((*events[0])[0], "mem_cpy");
+        qs.finish();
+
+        //qs[kernel_idx].finish();
      
         //Launch the Kernel
         //cl::Event event;
@@ -389,11 +456,17 @@ int main(int argc, char** argv ){
             //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
             //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
             //OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], &((*events[1])[i])));
-            OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], NULL ));
+            //OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], NULL ));
+            //OCL_CHECK(qs.enqueueTask(krnl_indels[kernel_idx], events[0], NULL ));
+            size_t global = 1;
+            size_t local = 1;
+            OCL_CHECK(qs.enqueueNDRangeKernel(krnl_indels[kernel_idx], 0, global , local, events[0], NULL ));
 
+        	//qs.finish();
         //qs[kernel_idx].finish();
             //q.finish();
         }
+
 
         //event.wait();
         //Copy Result from Device Global Memory to Host Local Memory
@@ -401,9 +474,13 @@ int main(int argc, char** argv ){
         
         
       	//qs[kernel_idx].finish();
-        qs[kernel_idx].finish();
-        OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, events[1], &((*events[2])[0])));
-        qs[kernel_idx].finish();
+        qs.finish();
+        OCL_CHECK(qs.enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, events[1], &((*events[2])[0])));
+
+ 	//set_callback((*events[2])[0], "mem_cpy_from_fpga");
+        //OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, events[1], &((*events[2])[0])));
+        //qs[kernel_idx].finish();
+        qs.finish();
         //OPENCL HOST CODE AREA END   
         //int * whd_buffer_arr = &whd_buffer[0];
         //Indel_Rank(con_size, reads_size, whd_buffer_arr, new_ref_idx); 
@@ -413,9 +490,12 @@ int main(int argc, char** argv ){
 
         //generate_ref(std::vector<ap_ustd::vector<int><4>>* consensus, std::vector<int>* con_size, std::vector<int>* con_base, \
         //std::vector<ap_ustd::vector<int><4>>* reads, std::vector<int>* reads_size, std::vector<int>* reads_base, char* qs, std::vector<int>* new_ref_idx) {
-        generate_ref(con_arr_buffer_copy, con_size_buffer, con_base_buffer, reads_arr_buffer_copy, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer);
-        compare_results(new_ref_idx_buffer, new_ref_idx_ref_buffer, reads_size_buffer);
+        //generate_ref(con_arr_buffer_copy, con_size_buffer, con_base_buffer, reads_arr_buffer_copy, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer);
+        //compare_results(new_ref_idx_buffer, new_ref_idx_ref_buffer, reads_size_buffer);
+        //print_results(new_ref_idx_ref_buffer, reads_size_buffer);
+        print_results(new_ref_idx_buffer, reads_size_buffer);
 
+	delete (new_ref_idx_buffer); 
     }
 
 }

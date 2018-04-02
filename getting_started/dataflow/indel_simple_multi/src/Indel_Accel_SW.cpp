@@ -133,7 +133,7 @@ void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_si
         min_idx = (score < min_score) ? i : min_idx;
         //scores[i] = score;
     }
-    fprintf(stderr, "min_idx: %d\n", min_idx);
+    //fprintf(stderr, "min_idx: %d\n", min_idx);
     //assert(min_idx < consensus_size);
     
     for (j = 0; j < reads_size; j++) {
@@ -146,9 +146,9 @@ void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_si
         //}
     }
 
-    for (j = 0; j < reads_size; j++) {
-        printf("Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
-    }
+    //for (j = 0; j < reads_size; j++) {
+    //    printf("Read %2d whd %4d  index %2d\n", j, new_ref[j], new_ref_idx[j]);
+    //}
 }
 
 
@@ -206,4 +206,14 @@ void compare_results(std::vector<int, aligned_allocator<int>>*new_ref_idx_buffer
         }
         std::cout << "TEST " << (match ? "FAILED" : "PASSED") << std::endl;
     } 
+}
+
+void print_results(std::vector<int, aligned_allocator<int>>*new_ref_idx_buffer, std::vector<int, aligned_allocator<int>>* reads_size){
+
+    for (size_t i = 0; i < reads_size->size() - 1; i++) {
+	fprintf(stderr, "TEST %d\n", i);
+        for (int j = (*reads_size)[i]; j < (*reads_size)[i+1] ; j++) {
+		fprintf(stderr, "i = %d result = %d\n", j, (*new_ref_idx_buffer)[j]);
+        }
+   }
 }
