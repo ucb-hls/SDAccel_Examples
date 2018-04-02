@@ -166,6 +166,8 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
         }
         //consensus_base += local_consensus_length;
     }
+   
+    printf("Finish WHD\n");
     
     int min_score = 0x7fffffff;
     int min_idx = consensus_size + 1;
@@ -187,7 +189,8 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
             //new_ref[j] = min_whd[min_idx][j];
             //new_ref_idx[j] = min_whd_idx[min_idx][j];
-            new_ref[new_ref_idx_base + j] = min_whd[min_idx * reads_size + j];
+            //new_ref[new_ref_idx_base + j] = min_whd[min_idx * reads_size + j];
+            new_ref[j] = min_whd[min_idx * reads_size + j];
             new_ref_idx[new_ref_idx_base + j] = min_whd_idx[ min_idx * reads_size +j];
  
         //} else{
@@ -196,7 +199,7 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
         //}
     }
     for (int j = 0; j < reads_size; j++) {
-     printf("Read %2d whd %2d index %2d\n", j, new_ref[new_ref_idx_base + j], new_ref_idx[new_ref_idx_base + j]);
+     printf("Read %2d whd %2d index %2d\n", j, new_ref[j], new_ref_idx[new_ref_idx_base + j]);
     }
 }
 

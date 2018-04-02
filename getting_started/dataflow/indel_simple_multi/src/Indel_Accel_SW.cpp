@@ -52,8 +52,8 @@ void whd (char* consensus, const int consensus_size, int* consensus_length, \
 
 
 
-void whd_vec (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, \
+void whd_vec (char* consensus, const int consensus_size, int* consensus_length, \
+    char* reads, const int reads_size, int* reads_length, char* qs, \
     int* min_whd, int* min_whd_idx) {
     int i, j, k, l;
     for (i = 0; i < consensus_size; i++) {
@@ -62,7 +62,7 @@ void whd_vec (ap_uint<4>* consensus, const int consensus_size, int* consensus_le
         for (j = 0; j < reads_size; j++) {
             int reads_base = reads_length[j];
             int local_reads_length = reads_length[j+1]-reads_length[j];
-            fprintf(stderr, "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
+            //fprintf(stderr, "consensus size %d i %d consensus length %d, read size %d j %d reads length %d\n", \
                 consensus_size, i, local_consensus_length, reads_size,  j, local_reads_length);
             int min = 0x7fffffff; 
             int min_idx = local_consensus_length - local_reads_length + 1;
@@ -92,8 +92,8 @@ void whd_vec (ap_uint<4>* consensus, const int consensus_size, int* consensus_le
                }
 
             }
-            fprintf(stderr, "min_idx %d, min %d\n", min_idx, min);
-            assert(min_idx <= local_consensus_length - local_reads_length);
+            //fprintf(stderr, "min_idx %d, min %d\n", min_idx, min);
+            //assert(min_idx <= local_consensus_length - local_reads_length);
 
             min_whd[i * reads_size + j] = min;
             min_whd_idx[i * reads_size + j] = min_idx;
@@ -134,7 +134,7 @@ void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_si
         //scores[i] = score;
     }
     fprintf(stderr, "min_idx: %d\n", min_idx);
-    assert(min_idx < consensus_size);
+    //assert(min_idx < consensus_size);
     
     for (j = 0; j < reads_size; j++) {
         //if ( min_whd[ min_idx * reads_size + j] < min_whd[j]){
@@ -152,8 +152,8 @@ void score_whd (int* min_whd, int* min_whd_idx, int consensus_size, int reads_si
 }
 
 
-void whd_ref (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
-    ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, \
+void whd_ref (char* consensus, const int consensus_size, int* consensus_length, \
+    char* reads, const int reads_size, int* reads_length, char* qs, \
     int* new_ref, int* new_ref_idx) {
 
     int* min_whd = (int*) malloc(consensus_size* reads_size * sizeof(int));
@@ -166,8 +166,8 @@ void whd_ref (ap_uint<4>* consensus, const int consensus_size, int* consensus_le
 }
 
 
-void generate_ref(std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* consensus, std::vector<int, aligned_allocator<int>>* con_size, std::vector<int, aligned_allocator<int>>* con_base, \
-    std::vector<ap_uint<4>, aligned_allocator<ap_uint<4>>>* reads, std::vector<int, aligned_allocator<int>>* reads_size, std::vector<int, aligned_allocator<int>>* reads_base, std::vector<char, aligned_allocator<char>>* qs, std::vector<int, aligned_allocator<int>>* new_ref_idx) {
+void generate_ref(std::vector<char, aligned_allocator<char>>* consensus, std::vector<int, aligned_allocator<int>>* con_size, std::vector<int, aligned_allocator<int>>* con_base, \
+    std::vector<char, aligned_allocator<char>>* reads, std::vector<int, aligned_allocator<int>>* reads_size, std::vector<int, aligned_allocator<int>>* reads_base, std::vector<char, aligned_allocator<char>>* qs, std::vector<int, aligned_allocator<int>>* new_ref_idx) {
 
     // Since size is actual size + 1 [0, base]
     for (size_t i = 0; i < reads_size->size() - 1; i++) {

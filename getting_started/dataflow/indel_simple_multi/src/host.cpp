@@ -67,14 +67,18 @@ void get_filename (const char* file_prefix, char* con, char* reads, int number){
 
 
 
-void pack_ap_uint4(std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>* inout){
+void pack_ap_uint4(std::vector<char,aligned_allocator<char>>* inout){
 
     int size = inout->size();
-    for (int i; i < size; i++){
+    for (int i = 0; i < size; i++){
         int dst_idx = i >> 1;
         int offset = (i % 2) << 2;
-        char c = (*inout)[i] & 0xf;
-        (*inout)[dst_idx] = ((*inout)[dst_idx] & ~(0xf << offset)) | (c << offset);
+	char cur = (*inout)[i];
+	char prev = (*inout)[dst_idx];
+        char c = cur & 0xf;
+        c = (prev & ~(0xf << offset)) | (c << offset);
+	(*inout)[dst_idx] = c;
+	if (i < 8) printf("inout_prev %hhX inout_cur %hhX char %hhX %d %d\n", prev, cur, c, i, dst_idx);
        //printf("con_arr_buffer_0[%d + %d]: %hhX \n", idx, offset, con_arr_buffer_0[idx]);
     }
     inout->resize((size >> 1) + 1);
@@ -93,9 +97,10 @@ void parse_file(const char* file_prefix, int col_num, T* input_arr, std::vector<
     fp=fopen(con, "r");
     printf("File: %s\n", con);
 
-    if (fp == NULL)
+    if (fp == NULL) {
+        printf("File not found: %s!\n", con);
         exit(EXIT_FAILURE);
-
+    }
     // Length of each segment 
     char separators[] = "|";
     char *line = NULL;
@@ -184,10 +189,11 @@ int main(int argc, char** argv ){
     printf("Parse scheduele file\n");
     //Total number of target files 
     int num_tests = 0;
-    //int* test_indices = parse_schedule("../indel_tests/ch22-schedule.txt", &num_tests);
-    int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
+    int* test_indices = parse_schedule("../indel_tests/ch22-schedule.txt", &num_tests);
+    //int* test_indices = parse_schedule("../indel_tests/ir_toy-schedule.txt", &num_tests);
 
-    //num_tests  = 16;
+    num_tests  = 64;
+    printf("num_tests: %d \n", num_tests);
     // Set up the mapping for 4bit representation
     m['A'] = 0;
     m['T'] = 1;
@@ -199,8 +205,8 @@ int main(int argc, char** argv ){
     //int ** new_ref_idx_ref_arr = (int**) malloc(num_tests * sizeof(int*));
     //std::vector<std::vector<int,aligned_allocator<int>> *> new_ref_idx_arr(num_tests);
 
-    //const char* file_prefix = "../indel_tests/ch22-ir/";
-    const char* file_prefix = "../indel_tests/ir_toy/";
+    const char* file_prefix = "../indel_tests/ch22-ir/";
+    //const char* file_prefix = "../indel_tests/ir_toy/";
     char con[256] = "";
     char reads[256]="";
 
@@ -248,8 +254,8 @@ int main(int argc, char** argv ){
 
 
         // Allocate Buffers
-        std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> * con_arr_buffer = new std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>();
-        std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>> * reads_arr_buffer = new std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>();
+        std::vector<char,aligned_allocator<char>> * con_arr_buffer = new std::vector<char,aligned_allocator<char>>();
+        std::vector<char,aligned_allocator<char>> * reads_arr_buffer = new std::vector<char,aligned_allocator<char>>();
         std::vector<char,aligned_allocator<char>> * weights_arr_buffer = new std::vector<char,aligned_allocator<char>>();
 
         std::vector<int,aligned_allocator<int>> * con_size_buffer = new std::vector<int,aligned_allocator<int>>() ;
@@ -265,11 +271,21 @@ int main(int argc, char** argv ){
         int batch_size = ((num_tests - test_idx) <  BATCH_SIZE) ? (num_tests - test_idx) : BATCH_SIZE; 
         for (int i = 0; i < batch_size; i++){
             get_filename(file_prefix, con, reads, test_indices[test_idx + i]);
-            parse_file<std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>>(con, 1, con_arr_buffer, con_base_buffer, con_size_buffer, 1);
-            parse_file<std::vector<ap_uint<4>,aligned_allocator<ap_uint<4>>>>(reads, 4, reads_arr_buffer, reads_base_buffer, reads_size_buffer, 1);
+            parse_file<std::vector<char,aligned_allocator<char>>>(con, 1, con_arr_buffer, con_base_buffer, con_size_buffer, 1);
+            parse_file<std::vector<char,aligned_allocator<char>>>(reads, 4, reads_arr_buffer, reads_base_buffer, reads_size_buffer, 1);
             parse_file<std::vector<char,aligned_allocator<char>> >(reads, 5, weights_arr_buffer, NULL, NULL, 3);
         }
+
+
+        std::vector<char,aligned_allocator<char>> * con_arr_buffer_copy = new std::vector<char,aligned_allocator<char>>();
+        std::vector<char,aligned_allocator<char>> * reads_arr_buffer_copy = new std::vector<char,aligned_allocator<char>>();
+	con_arr_buffer_copy->insert(con_arr_buffer_copy->end(), con_arr_buffer->begin(), con_arr_buffer->end());
+	reads_arr_buffer_copy->insert(reads_arr_buffer_copy->end(), reads_arr_buffer->begin(), reads_arr_buffer->end());
+
+	pack_ap_uint4(con_arr_buffer);
+	pack_ap_uint4(reads_arr_buffer);
         int reads_total_size = reads_size_buffer->back();
+
         printf("reads_total_size: %d\n", reads_total_size);
         std::vector<int,aligned_allocator<int>> * new_ref_idx_buffer = new std::vector<int,aligned_allocator<int>> (reads_total_size); 
         std::vector<int,aligned_allocator<int>> * new_ref_idx_ref_buffer = new std::vector<int,aligned_allocator<int>> (); 
@@ -286,6 +302,9 @@ int main(int argc, char** argv ){
      
         // Setting input and output objects
         con_arr_buffer_ptr[kernel_idx].obj = con_arr_buffer->data();
+	for(int i =0; i<4; i++){
+		printf("con_buffer: %hhX\n", con_arr_buffer->data()[i]);
+	}
         con_size_buffer_ptr[kernel_idx].obj = con_size_buffer->data();
         con_base_buffer_ptr[kernel_idx].obj = con_base_buffer->data();
         reads_arr_buffer_ptr[kernel_idx].obj = reads_arr_buffer->data();
@@ -362,14 +381,17 @@ int main(int argc, char** argv ){
         start = std::chrono::high_resolution_clock::now(); 
 
         int work_group = batch_size >> 2;
-        events[1] = new std::vector<cl::Event>(work_group);
+        //events[1] = new std::vector<cl::Event>(work_group);
         for(int i = 0; i < work_group; i++) {
             krnl_indels[kernel_idx].setArg(narg+0, i);
             krnl_indels[kernel_idx].setArg(narg+1, 4);
 
             //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
             //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
-            OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], &((*events[1])[i])));
+            //OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], &((*events[1])[i])));
+            OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], NULL ));
+
+        //qs[kernel_idx].finish();
             //q.finish();
         }
 
@@ -379,6 +401,7 @@ int main(int argc, char** argv ){
         
         
       	//qs[kernel_idx].finish();
+        qs[kernel_idx].finish();
         OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(outBufVec_arr.back(), CL_MIGRATE_MEM_OBJECT_HOST, events[1], &((*events[2])[0])));
         qs[kernel_idx].finish();
         //OPENCL HOST CODE AREA END   
@@ -390,7 +413,7 @@ int main(int argc, char** argv ){
 
         //generate_ref(std::vector<ap_ustd::vector<int><4>>* consensus, std::vector<int>* con_size, std::vector<int>* con_base, \
         //std::vector<ap_ustd::vector<int><4>>* reads, std::vector<int>* reads_size, std::vector<int>* reads_base, char* qs, std::vector<int>* new_ref_idx) {
-        generate_ref(con_arr_buffer, con_size_buffer, con_base_buffer, reads_arr_buffer, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer);
+        generate_ref(con_arr_buffer_copy, con_size_buffer, con_base_buffer, reads_arr_buffer_copy, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer);
         compare_results(new_ref_idx_buffer, new_ref_idx_ref_buffer, reads_size_buffer);
 
     }
