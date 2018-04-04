@@ -122,7 +122,7 @@ void get_filename (const char* file_prefix, char* con, char* reads, int number){
     strcat(reads, test_num);
     strcat(reads, ".READS");
 
-    //printf("TARGET %s\n", test_num);
+    printf("TARGET %s\n", test_num);
 }
 
 
@@ -199,7 +199,7 @@ void parse_file(const char* file_prefix, int col_num, T* input_arr, std::vector<
                 input_len = strlen(p);
                 //fprintf(stderr, "line_num %d strlen %d\n", line_num, input_len[line_num]);
                 int k; 
-                for (k = 0; k < input_len; k++){
+                /*for (k = 0; k < input_len; k++){
                     //printf("%c", p[k]);
                     //strncpy(&input_arr[base + k], &p[k], 1);
                     if (option == 0){ // this is for elementwise 
@@ -217,7 +217,7 @@ void parse_file(const char* file_prefix, int col_num, T* input_arr, std::vector<
                     }
                     //printf("%d\n", line_num* len + k);
                     //fprintf(stderr, "%c", input_arr[base + k]);
-                }
+                }*/
                	//fprintf(stderr, "\n");
             }
             i++;
@@ -233,7 +233,7 @@ void parse_file(const char* file_prefix, int col_num, T* input_arr, std::vector<
     //    printf("%d\t", size_base->back());
     //    printf("%d\t", prev_size_base + line_num);
     }
-    //printf("\n");
+    printf("\n");
     //int arr_size = len * num_lines;
     //printf("%d\n", arr_size);
     //for(int i= 0; i < arr_size; i++ ){
@@ -256,9 +256,8 @@ int main(int argc, char** argv ){
     //int* test_indices = parse_schedule("../indel_tests/ch22-schedule-sorted-10000.txt", &num_tests);
 
     //num_tests  = 40320;
-    //num_tests  = 15;
+    //num_tests  = 60;
     //num_tests  = 10000;
-
     //printf("num_tests: %d\n", num_tests);
     //return 0;
     // Set up the mapping for 4bit representation
@@ -320,8 +319,8 @@ int main(int argc, char** argv ){
 //////OPENCL HOST CODE SETUP END////////
 
     std::vector<std::vector<cl::Memory> > inBufVec_arr, outBufVec_arr;
-    //int BATCH_SIZE = num_tests; 
-    int BATCH_SIZE = 40000;
+    int BATCH_SIZE = num_tests; 
+    //int BATCH_SIZE = 44348;
 
     start = std::chrono::high_resolution_clock::now(); 
     for (int test_idx = 0; test_idx< num_tests; test_idx+=BATCH_SIZE ) {
@@ -360,12 +359,16 @@ int main(int argc, char** argv ){
 	pack_ap_uint4(reads_arr_buffer);
         int reads_total_size = reads_size_buffer->back();
 
-        printf("reads_total_size: %lu Byte\n", reads_total_size);
+        printf("reads_total_size: %lu\n", reads_total_size);
         std::vector<int,aligned_allocator<int>> * new_ref_idx_buffer = new std::vector<int,aligned_allocator<int>> (reads_total_size); 
 	for (int i = 0; i < reads_total_size; i++) {
 		(*new_ref_idx_buffer)[i] = 0;
 	}
         std::vector<int,aligned_allocator<int>> * new_ref_idx_ref_buffer = new std::vector<int,aligned_allocator<int>> (); 
+
+        generate_count(con_arr_buffer_copy, con_size_buffer, con_base_buffer, reads_arr_buffer_copy, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer,test_indices);
+	return 0;
+
 
         con_arr_buffer_ptr[kernel_idx].flags  = ddr_bank; 
         con_size_buffer_ptr[kernel_idx].flags  = ddr_bank; 
@@ -422,9 +425,6 @@ int main(int argc, char** argv ){
         //        reads_size * con_size * 2 * sizeof(int), &whd_buffer_ptr[kernel_idx]);
         cl::Buffer new_ref_idx_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY | CL_MEM_EXT_PTR_XILINX ,
                 reads_size_buffer->back() * sizeof(int), &new_ref_idx_ptr[kernel_idx]);
-
-        //generate_count(con_arr_buffer_copy, con_size_buffer, con_base_buffer, reads_arr_buffer_copy, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer,test_indices);
-	//return 0;
 
         printf("Finish creating buffers\n");
         std::vector<cl::Memory> inBufVec, outBufVec;
@@ -490,21 +490,6 @@ int main(int argc, char** argv ){
             //q.finish();
         }
 
-        if (batch_size % 4 != 0) {
-            krnl_indels[kernel_idx].setArg(narg+0, work_group);
-            krnl_indels[kernel_idx].setArg(narg+1, batch_size % 4);
-
-            //q.enqueueTask(krnl_indels[kernel_idx], NULL, &events[0]);
-            //qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], NULL, &events[kernel_idx]);
-            //OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], &((*events[1])[i])));
-            //OCL_CHECK(qs[kernel_idx].enqueueTask(krnl_indels[kernel_idx], events[0], NULL ));
-            //OCL_CHECK(qs.enqueueTask(krnl_indels[kernel_idx], events[0], NULL ));
-            size_t global = 1;
-            size_t local = 1;
-            OCL_CHECK(qs.enqueueNDRangeKernel(krnl_indels[kernel_idx], 0, global , local, events[0], NULL ));
-		
-		//if (i % 6 == 0)
-        }
 
         //event.wait();
         //Copy Result from Device Global Memory to Host Local Memory
