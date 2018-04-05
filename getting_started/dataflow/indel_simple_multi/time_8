@@ -1,0 +1,33 @@
+Parse scheduele file
+String length: 1048832
+Total Number of Target Files: 144247
+Last index: 183934
+Device/Slot[0] (/dev/xdma0, 0:0:1d.0)
+xclProbe found 1 FPGA slots with XDMA driver running
+platform Name: Xilinx
+Vendor Name : Xilinx
+Found Platform
+XCLBIN File Name: Indel_Accel
+INFO: Importing ./Indel_Accel.hw.xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0.awsxclbin
+Loading: './Indel_Accel.hw.xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0.awsxclbin'
+reads_total_size: 4727683 Byte
+Preprocess time is : 30 ms
+Total Size: 1826060886 Bytes
+Finish creating buffers
+OpenCl Execution time is: 600888 ms
+reads_total_size: 4789551 Byte
+Preprocess time is : 600888 ms
+Total Size: 1842752727 Bytes
+Finish creating buffers
+OpenCl Execution time is: 561356 ms
+reads_total_size: 4821776 Byte
+Preprocess time is : 561356 ms
+Total Size: 1858851955 Bytes
+Finish creating buffers
+OpenCl Execution time is: 553587 ms
+reads_total_size: 2893587 Byte
+Preprocess time is : 553587 ms
+Total Size: 1116984787 Bytes
+Finish creating buffers
+OpenCl Execution time is: 347161 ms
+Parse time is: 3246060 ms
