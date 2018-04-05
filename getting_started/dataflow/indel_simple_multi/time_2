@@ -1,0 +1,49 @@
+Parse scheduele file
+String length: 2097664
+Total Number of Target Files: 251458
+Last index: 320655
+Device/Slot[0] (/dev/xdma0, 0:0:1d.0)
+xclProbe found 1 FPGA slots with XDMA driver running
+platform Name: Xilinx
+Vendor Name : Xilinx
+Found Platform
+XCLBIN File Name: Indel_Accel
+INFO: Importing ./Indel_Accel.hw.xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0.awsxclbin
+Loading: './Indel_Accel.hw.xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0.awsxclbin'
+Successfully skipped reloading of local image.
+reads_total_size: 4747260 Byte
+Preprocess time is : 30 ms
+Total Size: 1833627111 Bytes
+Finish creating buffers
+OpenCl Execution time is: 593812 ms
+reads_total_size: 4826007 Byte
+Preprocess time is : 593812 ms
+Total Size: 1860526528 Bytes
+Finish creating buffers
+OpenCl Execution time is: 576446 ms
+reads_total_size: 4727848 Byte
+Preprocess time is : 576446 ms
+Total Size: 1823212454 Bytes
+Finish creating buffers
+OpenCl Execution time is: 557370 ms
+reads_total_size: 4785304 Byte
+Preprocess time is : 557370 ms
+Total Size: 1847306881 Bytes
+Finish creating buffers
+OpenCl Execution time is: 582433 ms
+reads_total_size: 4869332 Byte
+Preprocess time is : 582433 ms
+Total Size: 1879219457 Bytes
+Finish creating buffers
+OpenCl Execution time is: 585448 ms
+reads_total_size: 4828314 Byte
+Preprocess time is : 585448 ms
+Total Size: 1864333742 Bytes
+Finish creating buffers
+OpenCl Execution time is: 609281 ms
+reads_total_size: 1297416 Byte
+Preprocess time is : 609281 ms
+Total Size: 501250808 Bytes
+Finish creating buffers
+OpenCl Execution time is: 156894 ms
+Parse time is: 6599499 ms
