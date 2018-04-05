@@ -1,0 +1,126 @@
+SDAccel Profile Summary
+Generated on: 2018-04-05 01:45:41
+Msec since Epoch: 1522892741252
+Profiled application: host
+Target platform: Xilinx
+Target devices: xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0
+Flow mode: System Run
+Tool version: 2017.1
+
+OpenCL API Calls
+API Name,Number Of Calls,Total Time (ms),Minimum Time (ms),Average Time (ms),Maximum Time (ms),
+clFinish,6,1.17473e+06,3.03971,195788,589006,
+clCreateProgramWithBinary,1,605.806,605.806,605.806,605.806,
+clEnqueueNDRangeKernel,19709,412.799,0.0088,0.0209447,0.07834,
+clSetKernelArg,39434,73.4238,0.000483,0.00186194,0.030078,
+clEnqueueMigrateMemObjects,4,1.87729,0.021824,0.469324,0.937443,
+clReleaseProgram,1,0.137261,0.137261,0.137261,0.137261,
+clReleaseMemObject,32,0.119137,0.000293,0.00372303,0.048127,
+clCreateBuffer,16,0.086368,0.000899,0.005398,0.044186,
+clReleaseKernel,3,0.027291,0.000877,0.009097,0.025151,
+clRetainMemObject,16,0.017216,0.000707,0.001076,0.003179,
+clCreateContext,1,0.015147,0.015147,0.015147,0.015147,
+clGetExtensionFunctionAddress,2,0.012743,0.001472,0.0063715,0.011271,
+clCreateKernel,1,0.012693,0.012693,0.012693,0.012693,
+clGetPlatformInfo,14,0.007844,0.000334,0.000560286,0.002721,
+clCreateCommandQueue,1,0.005872,0.005872,0.005872,0.005872,
+clReleaseEvent,2,0.005145,0.002412,0.0025725,0.002733,
+clGetDeviceIDs,2,0.004474,0.000457,0.002237,0.004017,
+clRetainKernel,2,0.002462,0.000749,0.001231,0.001713,
+clRetainDevice,2,0.002217,0.000595,0.0011085,0.001622,
+clGetDeviceInfo,2,0.001999,0.000612,0.0009995,0.001387,
+clReleaseCommandQueue,1,0.001608,0.001608,0.001608,0.001608,
+clReleaseDevice,2,0.000998,0.000299,0.000499,0.000699,
+clReleaseContext,1,0.000749,0.000749,0.000749,0.000749,
+
+
+Kernel Execution
+Kernel,Number Of Enqueues,Total Time (ms),Minimum Time (ms),Average Time (ms),Maximum Time (ms),
+Indel_Accel,19709,2.21465e+06,0.875616,112.368,2609.52,
+
+
+Compute Unit Utilization
+Device,Compute Unit,Kernel,Global Work Size,Local Work Size,Number Of Calls,Total Time (ms),Minimum Time (ms),Average Time (ms),Maximum Time (ms),
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_1,Indel_Accel,1:1:1,1:1:1,1226,1.16899e+06,169.281,953.5,8335.32,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_10,Indel_Accel,1:1:1,1:1:1,1216,1.16949e+06,173.451,961.75,5606.81,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_11,Indel_Accel,1:1:1,1:1:1,1215,1.17214e+06,104.564,964.724,4662.4,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_12,Indel_Accel,1:1:1,1:1:1,1216,1.16932e+06,134.486,961.615,5083.15,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_13,Indel_Accel,1:1:1,1:1:1,1208,1.17001e+06,55.8738,968.55,5945.56,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_14,Indel_Accel,1:1:1,1:1:1,1263,1.17034e+06,127.016,926.636,5925.78,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_15,Indel_Accel,1:1:1,1:1:1,1234,1.17148e+06,116.52,949.333,5253.75,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_16,Indel_Accel,1:1:1,1:1:1,1273,1.17113e+06,129.585,919.973,5125.39,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_2,Indel_Accel,1:1:1,1:1:1,1257,1.16926e+06,171.96,930.2,5599.49,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_3,Indel_Accel,1:1:1,1:1:1,1237,1.17021e+06,166.175,946.003,6297.22,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_4,Indel_Accel,1:1:1,1:1:1,1223,1.17213e+06,175.783,958.407,6192.35,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_5,Indel_Accel,1:1:1,1:1:1,1210,1.16982e+06,155.128,966.795,7167.57,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_6,Indel_Accel,1:1:1,1:1:1,1198,1.16977e+06,199.314,976.433,6044.91,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_7,Indel_Accel,1:1:1,1:1:1,1215,1.17086e+06,137.95,963.673,5951.16,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_8,Indel_Accel,1:1:1,1:1:1,1235,1.17052e+06,104.464,947.793,5251.23,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,Indel_Accel_9,Indel_Accel,1:1:1,1:1:1,1283,1.1704e+06,63.2223,912.237,4549.1,
+
+
+Data Transfer: Host and Global Memory
+Context:Number of Devices,Transfer Type,Number Of Transfers,Transfer Rate (MB/s),Average Bandwidth Utilization (%),Average Size (KB),Total Time (ms),Average Time (ms),
+context0:1,READ,2,6184.298259,64.419774,18895.1,6.110660,3.055330,
+context0:1,WRITE,2,5653.659685,58.892288,1.82483e+06,645.539841,322.769920,
+
+
+Data Transfer: Kernels and Global Memory
+Device,Transfer Type,Number Of Transfers,Transfer Rate (MB/s),Average Bandwidth Utilization (%),Average Size (KB),Average Time (ns),Device Execution Time (ms),
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,READ,594554142,1.47696,0.0128208,0.004129,9.16369,1.66214e+06,
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,WRITE,9447536,0.0227358,0.00019736,0.004,12.7114,1.66214e+06,
+
+
+Top Data Transfer: Kernels and Global Memory
+Device,Kernel Name,Number of Transfers,Average Bytes per Transfer,Transfer Efficiency (%),Total Data Transfer (MB),Total Write (MB),Total Read (MB),Transfer Rate (MB/s),Average Bandwidth Utilization (%),
+xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,ALL,604001678,4.12698,0.100756,2492.7,37.7901,2454.91,1.4997,0.0130182,
+
+
+Top Kernel Execution
+Kernel Instance Address,Kernel,Context ID,Command Queue ID,Device,Start Time (ms),Duration (ms),Global Work Size,Local Work Size,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15305e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.153e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15288e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15155e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15132e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.1512e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15119e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15115e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15113e+06,1:1:1,1:1:1,
+29187696,Indel_Accel,0,0,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,0,2.15097e+06,1:1:1,1:1:1,
+
+
+Top Buffer Writes
+Buffer Address,Context ID,Command Queue ID,Start Time (ms),Duration (ms),Buffer Size (KB),Writing Rate(MB/s),
+66936976,0,0,1.56727e+06,394.599606,1.79566e+06,4550.590955,
+28979696,0,0,490664,250.940235,1.854e+06,7388.218059,
+
+
+Top Buffer Reads
+Buffer Address,Context ID,Command Queue ID,Start Time (ms),Duration (ms),Buffer Size (KB),Reading Rate(MB/s),
+29483040,0,0,2.15306e+06,3.125966,18583.8,5944.975729,
+29190224,0,0,1.08022e+06,2.984694,19206.4,6434.948440,
+
+
+PRC Parameters
+Parameter,Element,Value,
+DEVICE_EXEC_TIME,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,1662139.354863,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_1,1226,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_10,1216,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_11,1215,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_12,1216,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_13,1208,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_14,1263,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_15,1234,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_16,1273,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_2,1257,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_3,1237,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_4,1223,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_5,1210,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_6,1198,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_7,1215,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_8,1235,
+CU_CALLS,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0|Indel_Accel_9,1283,
+MEMORY_BIT_WIDTH,xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0-0,512,
+
+
