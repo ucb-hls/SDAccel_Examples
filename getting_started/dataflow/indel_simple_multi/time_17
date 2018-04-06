@@ -2,6 +2,7 @@ Parse scheduele file
 String length: 1048832
 Total Number of Target Files: 90488
 Last index: 116453
+Parse time is: 0 ms
 Device/Slot[0] (/dev/xdma0, 0:0:1d.0)
 xclProbe found 1 FPGA slots with XDMA driver running
 platform Name: Xilinx
@@ -11,19 +12,277 @@ XCLBIN File Name: Indel_Accel
 INFO: Importing ./Indel_Accel.hw.xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0.awsxclbin
 Loading: './Indel_Accel.hw.xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0.awsxclbin'
 Successfully skipped reloading of local image.
-reads_total_size: 4694669 Byte
-Preprocess time is : 30 ms
-Total Size: 1812990894 Bytes
-Finish creating buffers
-OpenCl Execution time is: 612623 ms
-reads_total_size: 4743588 Byte
-Preprocess time is : 612623 ms
-Total Size: 1832410512 Bytes
-Finish creating buffers
-OpenCl Execution time is: 619036 ms
-reads_total_size: 1175880 Byte
-Preprocess time is : 619036 ms
-Total Size: 455001058 Bytes
-Finish creating buffers
-OpenCl Execution time is: 153370 ms
-Parse time is: 2303823 ms
+Total Size: 43310698 Bytes
+Preprocess time is : 7658 ms
+Parse time is: 8815 ms
+Total Size: 44617600 Bytes
+Preprocess time is : 7845 ms
+Parse time is: 17853 ms
+Total Size: 44937057 Bytes
+Preprocess time is : 7854 ms
+Parse time is: 26906 ms
+Total Size: 45894449 Bytes
+Preprocess time is : 8017 ms
+Parse time is: 36148 ms
+Total Size: 44483387 Bytes
+Preprocess time is : 7788 ms
+Parse time is: 45118 ms
+Total Size: 45360518 Bytes
+Preprocess time is : 7943 ms
+Parse time is: 54274 ms
+Total Size: 45543609 Bytes
+Preprocess time is : 7955 ms
+Parse time is: 63437 ms
+Total Size: 44654392 Bytes
+Preprocess time is : 7857 ms
+Parse time is: 72486 ms
+Total Size: 45639358 Bytes
+Preprocess time is : 7951 ms
+Parse time is: 81651 ms
+Total Size: 45140500 Bytes
+Preprocess time is : 7891 ms
+Parse time is: 90741 ms
+Total Size: 46928107 Bytes
+Preprocess time is : 8135 ms
+Parse time is: 100127 ms
+Total Size: 46120075 Bytes
+Preprocess time is : 8034 ms
+Parse time is: 109390 ms
+Total Size: 45230738 Bytes
+Preprocess time is : 7910 ms
+Parse time is: 118500 ms
+Total Size: 44880744 Bytes
+Preprocess time is : 7890 ms
+Parse time is: 127583 ms
+Total Size: 45724844 Bytes
+Preprocess time is : 8023 ms
+Parse time is: 136826 ms
+Total Size: 45040909 Bytes
+Preprocess time is : 7915 ms
+Parse time is: 145935 ms
+Total Size: 45691670 Bytes
+Preprocess time is : 7992 ms
+Parse time is: 155143 ms
+Total Size: 45688117 Bytes
+Preprocess time is : 7957 ms
+Parse time is: 164305 ms
+Total Size: 45049613 Bytes
+Preprocess time is : 7853 ms
+Parse time is: 173346 ms
+Total Size: 45987429 Bytes
+Preprocess time is : 7960 ms
+Parse time is: 182513 ms
+Total Size: 43614245 Bytes
+Preprocess time is : 7682 ms
+Parse time is: 191347 ms
+Total Size: 43990125 Bytes
+Preprocess time is : 7769 ms
+Parse time is: 200288 ms
+Total Size: 43932204 Bytes
+Preprocess time is : 7733 ms
+Parse time is: 209183 ms
+Total Size: 45394196 Bytes
+Preprocess time is : 7922 ms
+Parse time is: 218304 ms
+Total Size: 45429314 Bytes
+Preprocess time is : 7907 ms
+Parse time is: 227409 ms
+Total Size: 44785274 Bytes
+Preprocess time is : 7845 ms
+Parse time is: 236439 ms
+Total Size: 45311414 Bytes
+Preprocess time is : 7907 ms
+Parse time is: 245536 ms
+Total Size: 45656104 Bytes
+Preprocess time is : 7934 ms
+Parse time is: 254680 ms
+Total Size: 45940374 Bytes
+Preprocess time is : 7984 ms
+Parse time is: 263880 ms
+Total Size: 46827057 Bytes
+Preprocess time is : 8088 ms
+Parse time is: 273201 ms
+Total Size: 46423927 Bytes
+Preprocess time is : 8042 ms
+Parse time is: 282464 ms
+Total Size: 46914100 Bytes
+Preprocess time is : 8123 ms
+Parse time is: 291830 ms
+Total Size: 46731958 Bytes
+Preprocess time is : 8088 ms
+Parse time is: 301148 ms
+Total Size: 44955197 Bytes
+Preprocess time is : 7866 ms
+Parse time is: 310199 ms
+Total Size: 44116950 Bytes
+Preprocess time is : 7741 ms
+Parse time is: 319103 ms
+Total Size: 46859969 Bytes
+Preprocess time is : 8105 ms
+Parse time is: 328445 ms
+Total Size: 41316896 Bytes
+Preprocess time is : 7430 ms
+Parse time is: 336969 ms
+Total Size: 46745399 Bytes
+Preprocess time is : 8093 ms
+Parse time is: 346301 ms
+Total Size: 46646477 Bytes
+Preprocess time is : 8073 ms
+Parse time is: 355610 ms
+Total Size: 45476584 Bytes
+Preprocess time is : 7962 ms
+Parse time is: 364785 ms
+Total Size: 45509382 Bytes
+Preprocess time is : 7928 ms
+Parse time is: 373915 ms
+Total Size: 47867538 Bytes
+Preprocess time is : 8262 ms
+Parse time is: 383448 ms
+Total Size: 44110680 Bytes
+Preprocess time is : 7748 ms
+Parse time is: 392365 ms
+Total Size: 46614739 Bytes
+Preprocess time is : 8077 ms
+Parse time is: 401677 ms
+Total Size: 44917627 Bytes
+Preprocess time is : 7870 ms
+Parse time is: 410736 ms
+Total Size: 44368821 Bytes
+Preprocess time is : 7797 ms
+Parse time is: 419716 ms
+Total Size: 43591168 Bytes
+Preprocess time is : 7698 ms
+Parse time is: 428569 ms
+Total Size: 44412187 Bytes
+Preprocess time is : 7752 ms
+Parse time is: 437485 ms
+Total Size: 44998463 Bytes
+Preprocess time is : 7883 ms
+Parse time is: 446559 ms
+Total Size: 46328524 Bytes
+Preprocess time is : 8075 ms
+Parse time is: 455867 ms
+Total Size: 46949633 Bytes
+Preprocess time is : 8124 ms
+Parse time is: 465244 ms
+Total Size: 44207808 Bytes
+Preprocess time is : 7760 ms
+Parse time is: 474172 ms
+Total Size: 42423420 Bytes
+Preprocess time is : 7566 ms
+Parse time is: 482865 ms
+Total Size: 46342781 Bytes
+Preprocess time is : 8067 ms
+Parse time is: 492168 ms
+Total Size: 45413472 Bytes
+Preprocess time is : 7917 ms
+Parse time is: 501281 ms
+Total Size: 47201535 Bytes
+Preprocess time is : 8153 ms
+Parse time is: 510684 ms
+Total Size: 44938586 Bytes
+Preprocess time is : 7819 ms
+Parse time is: 519682 ms
+Total Size: 47752081 Bytes
+Preprocess time is : 8217 ms
+Parse time is: 529162 ms
+Total Size: 46014912 Bytes
+Preprocess time is : 8029 ms
+Parse time is: 538399 ms
+Total Size: 46216907 Bytes
+Preprocess time is : 8066 ms
+Parse time is: 547693 ms
+Total Size: 45110926 Bytes
+Preprocess time is : 7891 ms
+Parse time is: 556776 ms
+Total Size: 47095598 Bytes
+Preprocess time is : 8135 ms
+Parse time is: 566159 ms
+Total Size: 48342234 Bytes
+Preprocess time is : 8305 ms
+Parse time is: 575745 ms
+Total Size: 45686867 Bytes
+Preprocess time is : 7931 ms
+Parse time is: 584878 ms
+Total Size: 45244710 Bytes
+Preprocess time is : 7915 ms
+Parse time is: 593987 ms
+Total Size: 46924360 Bytes
+Preprocess time is : 8101 ms
+Parse time is: 603337 ms
+Total Size: 46596831 Bytes
+Preprocess time is : 8090 ms
+Parse time is: 612665 ms
+Total Size: 45165747 Bytes
+Preprocess time is : 7876 ms
+Parse time is: 621731 ms
+Total Size: 45326762 Bytes
+Preprocess time is : 7865 ms
+Parse time is: 630787 ms
+Total Size: 45882051 Bytes
+Preprocess time is : 7977 ms
+Parse time is: 639979 ms
+Total Size: 48035179 Bytes
+Preprocess time is : 8299 ms
+Parse time is: 649555 ms
+Total Size: 46268566 Bytes
+Preprocess time is : 8054 ms
+Parse time is: 658840 ms
+Total Size: 46956085 Bytes
+Preprocess time is : 8157 ms
+Parse time is: 668245 ms
+Total Size: 47679316 Bytes
+Preprocess time is : 8211 ms
+Parse time is: 677717 ms
+Total Size: 47296380 Bytes
+Preprocess time is : 8187 ms
+Parse time is: 687158 ms
+Total Size: 47000240 Bytes
+Preprocess time is : 8138 ms
+Parse time is: 696542 ms
+Total Size: 46304187 Bytes
+Preprocess time is : 8044 ms
+Parse time is: 705815 ms
+Total Size: 44052138 Bytes
+Preprocess time is : 7741 ms
+Parse time is: 714722 ms
+Total Size: 43227079 Bytes
+Preprocess time is : 7726 ms
+Parse time is: 723602 ms
+Total Size: 44035672 Bytes
+Preprocess time is : 7748 ms
+Parse time is: 732519 ms
+Total Size: 45594778 Bytes
+Preprocess time is : 7952 ms
+Parse time is: 741685 ms
+Total Size: 43491487 Bytes
+Preprocess time is : 7679 ms
+Parse time is: 750518 ms
+Total Size: 45143220 Bytes
+Preprocess time is : 7922 ms
+Parse time is: 759646 ms
+Total Size: 44153009 Bytes
+Preprocess time is : 7849 ms
+Parse time is: 768669 ms
+Total Size: 44327380 Bytes
+Preprocess time is : 7797 ms
+Parse time is: 777646 ms
+Total Size: 44273047 Bytes
+Preprocess time is : 7780 ms
+Parse time is: 786604 ms
+Total Size: 42100167 Bytes
+Preprocess time is : 7507 ms
+Parse time is: 795234 ms
+Total Size: 43247006 Bytes
+Preprocess time is : 7652 ms
+Parse time is: 804034 ms
+Total Size: 41180174 Bytes
+Preprocess time is : 7401 ms
+Parse time is: 812530 ms
+Total Size: 42231924 Bytes
+Preprocess time is : 7504 ms
+Parse time is: 821154 ms
+Total Size: 19259039 Bytes
+Preprocess time is : 3531 ms
+Parse time is: 825195 ms
+Parse time is: 825195 ms
