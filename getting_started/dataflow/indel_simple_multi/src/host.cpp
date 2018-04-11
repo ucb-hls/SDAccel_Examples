@@ -284,7 +284,7 @@ int main(int argc, char** argv ){
     std::chrono::milliseconds duration, duration_parse;
 
     duration_parse = std::chrono::duration_cast<std::chrono::milliseconds>(finish - finish);
-
+    std::cout << "Parse time is: " << duration_parse.count() << " ms\n";  
 //////OPENCL HOST CODE SETUP START////////
     std::vector<cl::Device> devices = xcl::get_xil_devices();
     cl::Device device = devices[0];
@@ -321,11 +321,11 @@ int main(int argc, char** argv ){
 
     std::vector<std::vector<cl::Memory> > inBufVec_arr, outBufVec_arr;
     //int BATCH_SIZE = num_tests; 
-    int BATCH_SIZE = 40000;
+    int BATCH_SIZE = 1000;
 
-    start = std::chrono::high_resolution_clock::now(); 
     for (int test_idx = 0; test_idx< num_tests; test_idx+=BATCH_SIZE ) {
 
+        start = std::chrono::high_resolution_clock::now(); 
 
         // Allocate Buffers
         std::vector<char,aligned_allocator<char>> * con_arr_buffer = new std::vector<char,aligned_allocator<char>>();
@@ -351,6 +351,9 @@ int main(int argc, char** argv ){
         }
 
 
+        finish = std::chrono::high_resolution_clock::now();
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+ 
         std::vector<char,aligned_allocator<char>> * con_arr_buffer_copy = new std::vector<char,aligned_allocator<char>>();
         std::vector<char,aligned_allocator<char>> * reads_arr_buffer_copy = new std::vector<char,aligned_allocator<char>>();
 	con_arr_buffer_copy->insert(con_arr_buffer_copy->end(), con_arr_buffer->begin(), con_arr_buffer->end());
@@ -360,7 +363,7 @@ int main(int argc, char** argv ){
 	pack_ap_uint4(reads_arr_buffer);
         int reads_total_size = reads_size_buffer->back();
 
-        printf("reads_total_size: %lu Byte\n", reads_total_size);
+      //  printf("reads_total_size: %lu Byte\n", reads_total_size);
         std::vector<int,aligned_allocator<int>> * new_ref_idx_buffer = new std::vector<int,aligned_allocator<int>> (reads_total_size); 
 	for (int i = 0; i < reads_total_size; i++) {
 		(*new_ref_idx_buffer)[i] = 0;
@@ -391,8 +394,7 @@ int main(int argc, char** argv ){
         //whd_buffer_ptr[kernel_idx].obj = whd_buffer_0.data();
         new_ref_idx_ptr[kernel_idx].obj = new_ref_idx_buffer->data();
 
-        std::cout << "Preprocess time is : " << duration.count() << " ms\n";
-        // Setting param to zero 
+       // Setting param to zero 
         con_arr_buffer_ptr[kernel_idx].param = 0; con_size_buffer_ptr[kernel_idx].param = 0; con_base_buffer_ptr[kernel_idx].param = 0;
         reads_arr_buffer_ptr[kernel_idx].param = 0; reads_size_buffer_ptr[kernel_idx].param = 0; reads_base_buffer_ptr[kernel_idx].param = 0; 
         weights_arr_buffer_ptr[kernel_idx].param = 0; new_ref_idx_ptr[kernel_idx].param = 0;
@@ -416,7 +418,6 @@ int main(int argc, char** argv ){
                 reads_base_buffer->size() * sizeof(int), &reads_base_buffer_ptr[kernel_idx]);
 
 	size_t total_size = con_arr_buffer->size() + reads_arr_buffer->size() + weights_arr_buffer->size() +  con_size_buffer->size() * sizeof(int) + reads_size_buffer->size() * sizeof(int) + con_base_buffer->size() * sizeof(int) + reads_base_buffer->size() * sizeof(int); 
-	printf("Total Size: %lu Bytes\n", total_size);
  
         //cl::Buffer whd_output(context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY| CL_MEM_EXT_PTR_XILINX ,
         //        reads_size * con_size * 2 * sizeof(int), &whd_buffer_ptr[kernel_idx]);
@@ -426,7 +427,7 @@ int main(int argc, char** argv ){
         //generate_count(con_arr_buffer_copy, con_size_buffer, con_base_buffer, reads_arr_buffer_copy, reads_size_buffer, reads_base_buffer, weights_arr_buffer, new_ref_idx_ref_buffer,test_indices);
 	//return 0;
 
-        printf("Finish creating buffers\n");
+        //printf("Finish creating buffers\n");
         std::vector<cl::Memory> inBufVec, outBufVec;
 
         inBufVec_arr.push_back(inBufVec);
@@ -456,6 +457,9 @@ int main(int argc, char** argv ){
         finish = std::chrono::high_resolution_clock::now();
        
         duration_parse += std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+	    printf("Total Size: %lu Bytes\n", total_size);
+        std::cout << "Preprocess time is : " << duration.count() << " ms\n";
+        std::cout << "Parse time is: " << duration_parse.count() << " ms\n";  
         //OCL_CHECK(qs[kernel_idx].enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/, NULL, &((*events[0])[0])));
         OCL_CHECK(qs.enqueueMigrateMemObjects(inBufVec_arr.back(), 0/* 0 means from host*/, NULL, &((*events[0])[0])));
  	//set_callback((*events[0])[0], "mem_cpy");
@@ -533,7 +537,20 @@ int main(int argc, char** argv ){
         //print_results(new_ref_idx_ref_buffer, reads_size_buffer);
         print_results(new_ref_idx_buffer, reads_size_buffer);
 
+    delete (con_arr_buffer_copy); 
+    delete (reads_arr_buffer_copy); 
 	delete (new_ref_idx_buffer); 
+    inBufVec_arr.pop_back();
+    outBufVec_arr.pop_back();
+ 
+    delete(con_arr_buffer);
+    delete(reads_arr_buffer);
+    delete(weights_arr_buffer);
+
+    delete(con_size_buffer);
+    delete(reads_size_buffer);
+    delete(con_base_buffer);
+    delete(reads_base_buffer);
     }
     std::cout << "Parse time is: " << duration_parse.count() << " ms\n";  
 
