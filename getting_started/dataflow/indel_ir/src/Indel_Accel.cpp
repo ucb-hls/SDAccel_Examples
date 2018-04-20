@@ -15,6 +15,7 @@
 
 typedef ap_uint<8> TYPE;
 typedef ap_uint<1024> CON_SIZE_TYPE;
+//typedef ap_uint<64> RET_TYPE;
 #define nConsensus 32
 
 //extern "C" {
@@ -150,15 +151,18 @@ void Indel_Accel_Krnl (
         }
 }
 
+typedef struct RET_TYPE {
+    unsigned int id;
+    unsigned int rd;
+} RET_TYPE;
 // Len is the size, size is the len
-void Indel_Accel(unsigned int id, unsigned int rd, \
+RET_TYPE Indel_Accel(unsigned int id, unsigned int rd, \
                 unsigned int consAddr, unsigned int readAddr, unsigned int qualAddr, \
                 unsigned int consLen, unsigned int readLen, \
                 unsigned int posAddr, unsigned int swapAddr, \
                 unsigned int targetPos, CON_SIZE_TYPE conSize, \
                 TYPE* cons, TYPE* reads, TYPE* qual, \
-                unsigned int* pos, unsigned char* swap, \
-                unsigned int ret_id, unsigned int ret_rd) {
+                unsigned int* pos, unsigned char* swap) {
 #pragma HLS INTERFACE m_axi depth=64 port=cons offset=off bundle=cons
 #pragma HLS INTERFACE m_axi depth=64 port=reads offset=off bundle=reads
 #pragma HLS INTERFACE m_axi depth=64 port=qual offset=off bundle=qual
@@ -169,7 +173,9 @@ void Indel_Accel(unsigned int id, unsigned int rd, \
         Indel_Accel_Krnl(consAddr, readAddr, qualAddr, consLen, readLen, posAddr, swapAddr, targetPos, conSize, cons, reads, qual, pos, swap);
 
 
-        ret_id = id;
-        ret_rd = rd;
-        return;
+        RET_TYPE ret;
+        ret.id= id; 
+        ret.rd= rd; 
+
+        return ret;
 }

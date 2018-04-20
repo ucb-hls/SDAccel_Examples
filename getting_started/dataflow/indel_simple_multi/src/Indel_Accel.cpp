@@ -18,13 +18,25 @@ extern "C" {
 void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* consensus_length, \
     ap_uint<4>* reads, const int reads_size, int* reads_length, char* qs, int* new_ref_idx, int new_ref_idx_base){
 #pragma HLS INLINE
-#pragma HLS expression_balance
-    ap_uint<4> con_buffer [CON_SIZE * CON_LEN];
-    #pragma HLS array_partition variable=con_buffer cyclic factor=4
-    ap_uint<4> reads_buffer [READS_SIZE * READS_LEN];
-    #pragma HLS array_partition variable=reads_buffer cyclic factor=4
-    char weights_buffer[READS_SIZE * READS_LEN];
-    #pragma HLS array_partition variable=weights_buffer cyclic factor=4
+//#pragma HLS expression_balance
+    ap_uint<4> con_buffer_0 [CON_SIZE * CON_LEN / 4];
+    ap_uint<4> con_buffer_1 [CON_SIZE * CON_LEN / 4];
+    ap_uint<4> con_buffer_2 [CON_SIZE * CON_LEN / 4];
+    ap_uint<4> con_buffer_3 [CON_SIZE * CON_LEN / 4];
+    //#pragma HLS array_partition variable=con_buffer block factor=8
+    //#pragma HLS array_partition variable=con_buffer cyclic factor=4
+    ap_uint<4> reads_buffer_0 [READS_SIZE * READS_LEN / 4];
+    ap_uint<4> reads_buffer_1 [READS_SIZE * READS_LEN / 4];
+    ap_uint<4> reads_buffer_2 [READS_SIZE * READS_LEN / 4];
+    ap_uint<4> reads_buffer_3 [READS_SIZE * READS_LEN / 4];
+    //#pragma HLS array_partition variable=reads_buffer block factor=8
+    //#pragma HLS array_partition variable=reads_buffer cyclic factor=4
+    char weights_buffer_0[READS_SIZE * READS_LEN / 4];
+    char weights_buffer_1[READS_SIZE * READS_LEN / 4];
+    char weights_buffer_2[READS_SIZE * READS_LEN / 4];
+    char weights_buffer_3[READS_SIZE * READS_LEN / 4];
+    //#pragma HLS array_partition variable=weights_buffer block factor=8
+    //#pragma HLS array_partition variable=weights_buffer cyclic factor=8
 
     int consensus_length_buffer[CON_SIZE];
     #pragma HLS array_partition variable=consensus_length_buffer cyclic factor=2
@@ -42,16 +54,32 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
     int con_base = consensus_length_buffer[0];
     int con_end = consensus_length_buffer[consensus_size];
     
-    for (int i = 0; i < con_end - con_base; i++) {
-        con_buffer[i] = consensus[con_base + i];
+    int con_diff = con_end - con_base;
+    int con_diff_bound = con_diff >> 2 + 1;
+    for (int i = 0; i < con_diff_bound; i+=1) {
+        //#pragma HLS unroll skip_exit_check factor=2
+        int i4 = i << 2;
+        con_buffer_0[i] = consensus[con_base + i4];
+        con_buffer_1[i] = consensus[con_base + i4 + 1];
+        con_buffer_2[i] = consensus[con_base + i4 + 2];
+        con_buffer_3[i] = consensus[con_base + i4 + 3];
     }
 
     int rs_base = reads_length_buffer[0];
     int rs_end = reads_length_buffer[reads_size];
-    
-    for (int i = 0; i < rs_end - rs_base; i++) {
-        reads_buffer[i] = reads[rs_base + i];
-        weights_buffer[i] = qs[rs_base + i];
+    int rs_diff = rs_end - rs_base; 
+    int rs_diff_bound = rs_diff >> 2 + 1;
+    for (int i = 0; i < rs_diff_bound; i++) {
+        //#pragma HLS unroll skip_exit_check factor=2
+        int i4 = i << 2;
+        reads_buffer_0[i] = reads[rs_base + i4 + 0];
+        reads_buffer_1[i] = reads[rs_base + i4 + 1];
+        reads_buffer_2[i] = reads[rs_base + i4 + 2];
+        reads_buffer_3[i] = reads[rs_base + i4 + 3];
+        weights_buffer_0[i] = qs[rs_base + i4 + 0];
+        weights_buffer_1[i] = qs[rs_base + i4 + 1];
+        weights_buffer_2[i] = qs[rs_base + i4 + 2];
+        weights_buffer_3[i] = qs[rs_base + i4 + 3];
     }
 
     //#pragma HLS DATAFLOW
@@ -88,16 +116,50 @@ void Indel_Accel_Krnl (ap_uint<4>* consensus, const int consensus_size, int* con
                 int whd = 0;
                 // Optimization tree based reduction
                 //for (int l = 0; l < local_reads_length; l+=BLOCK_SIZE) {
-                for (int l = 0; l < local_reads_length; l++) {
-                #pragma HLS unroll factor=4
+//loop_conbuffer: for (int l = 0; l < local_reads_length; l++) {
+              int bound = (local_reads_length >> 2) << 2; 
+loop_conbuffer: for (int l = 0; l < bound; l+=4) {
+                //#pragma HLS unroll factor=4
+                //#pragma HLS unroll skip_exit_check factor=4
                               //printf("%c", consensus[consensus_base + k + l]);
                     //printf("%c", reads[reads_base + k + l]);
-                    if (con_buffer[consensus_base + k + l] != reads_buffer[reads_base + l]){
-                        whd += weights_buffer[reads_base + l];
+                    int con_start_addr =  consensus_base + k + l; 
+                    int con_start_buf = con_start_addr & 0x3;
+                    int con_start_addr_idx = con_start_addr >> 2;
+                    int con_0, con_1, con_2, con_3;
+                    con_0 = (con_start_buf > 0) ? con_start_addr_idx + 1 : 0;
+                    con_1 = (con_start_buf > 1) ? con_start_addr_idx + 1 : 0;
+                    con_2 = (con_start_buf > 2) ? con_start_addr_idx + 1 : 0;
+                    con_3 = (con_start_buf > 3) ? con_start_addr_idx + 1 : 0;
+                    
+                    int r_start_addr =  reads_base + l; 
+                    int r_start_buf = r_start_addr & 0x3;
+                    int r_start_addr_idx = r_start_addr >> 2;
+                    int r_0, r_1, r_2, r_3;
+                    r_0 = (r_start_buf > 0) ? r_start_addr_idx + 1 : 0;
+                    r_1 = (r_start_buf > 1) ? r_start_addr_idx + 1 : 0;
+                    r_2 = (r_start_buf > 2) ? r_start_addr_idx + 1 : 0;
+                    r_3 = (r_start_buf > 3) ? r_start_addr_idx + 1 : 0;
+ 
+
+                    int whd_0 = (con_buffer_0[con_0] != reads_buffer_0[r_0]) ? weights_buffer_0[r_0] : 0;
+                    int whd_1 = (con_buffer_1[con_1] != reads_buffer_1[r_1]) ? weights_buffer_1[r_1] : 0;
+                    int whd_2 = (con_buffer_2[con_2] != reads_buffer_2[r_2]) ? weights_buffer_2[r_2] : 0;
+                    int whd_3 = (con_buffer_3[con_3] != reads_buffer_3[r_3]) ? weights_buffer_3[r_3] : 0;
+                    int whd_01 = whd_0 + whd_1;
+                    int whd_23 = whd_2 + whd_3;
+                    int whd_all = whd_01 + whd_23;
+                    whd += whd_all;
+                    //ap_uint<4> con_char = con_buffer[consensus_base + k + l];
+                    //ap_uint<4> reads_char = reads_buffer[reads_base + l];
+                    //if (con_buffer[consensus_base + k + l] != reads_buffer[reads_base + l]){
+                    //if (con_char != reads_char) {
+                    //    whd += weights_buffer[reads_base + l];
                         //if(k == 8 & j == 1){
                         //    printf("whd: %d\t", whd);
                         //}
-                    }                        
+                    //}                        
+
                     //printf("whd: %d\t", whd);
                     //printf("\t");
 
