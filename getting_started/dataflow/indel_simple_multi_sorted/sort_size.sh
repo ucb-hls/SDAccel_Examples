@@ -1,7 +1,8 @@
 #source $XILINX_SDX/settings64.sh
 
 #TEST=20
-for TEST in `seq 15 19`;do
+#for TEST in `seq 15 21`;do
+for TEST in `seq 1 7`;do
 
 SCHE=/home/centos/target-dir/${TEST}valid.txt
 TARGET=/home/centos/target-dir/$TEST/
